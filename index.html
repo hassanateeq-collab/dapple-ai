@@ -1,0 +1,1471 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Dapple AI</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400..900;1,9..144,400..600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --cream: #fdf6ec;
+    --paper: #fffdf8;
+    --ink: #4a3220;
+    --ink-soft: #8a6f52;
+    --amber: #e8940f;
+    --orange: #e2661c;
+    --gold: #f5b942;
+    --nova: #c47a08;
+    --micro: #d95f1e;
+    --years: #8a5a2b;
+    --shadow: 0 6px 24px rgba(90, 60, 20, .12);
+    --radius: 18px;
+
+    /* font families toggled by body class */
+    --font-fancy: "Fraunces", "Hoefler Text", "Palatino Linotype", Palatino, "Book Antiqua", Georgia, serif;
+    --font-plain: "Avenir Next", "Segoe UI", system-ui, -apple-system, Roboto, Helvetica, Arial, sans-serif;
+    --ui-font: var(--font-fancy);
+  }
+  body.font-plain { --ui-font: var(--font-plain); }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  html { font-size: 17.5px; }
+  html, body { height: 100%; }
+  body {
+    font-family: var(--ui-font);
+    background:
+      radial-gradient(ellipse 900px 400px at 20% -5%, rgba(245, 185, 66, .18), transparent 60%),
+      radial-gradient(ellipse 700px 350px at 85% -5%, rgba(226, 102, 28, .14), transparent 60%),
+      var(--cream);
+    color: var(--ink);
+    display: flex;
+    flex-direction: column;
+    height: 100dvh;
+    overflow: hidden;
+  }
+
+  /* ---------- leaf canopy (decorative top) ---------- */
+  #canopy {
+    position: fixed;
+    top: 0; left: 0; right: 0;
+    height: 110px;
+    pointer-events: none;
+    z-index: 60;
+    overflow: visible;
+  }
+  .leaf {
+    position: absolute;
+    transform-origin: 50% 0%;
+    animation: sway var(--dur, 4s) ease-in-out var(--delay, 0s) infinite alternate;
+    filter: drop-shadow(0 3px 3px rgba(90, 50, 10, .18));
+  }
+  @keyframes sway {
+    from { transform: translateY(var(--dip, 0px)) rotate(calc(var(--rot, 0deg) - 5deg)) scale(var(--scale, 1)); }
+    to   { transform: translateY(var(--dip, 0px)) rotate(calc(var(--rot, 0deg) + 5deg)) scale(var(--scale, 1)); }
+  }
+  .faller {
+    position: fixed;
+    top: -70px;
+    pointer-events: none;
+    z-index: 55;
+    animation: fall var(--fdur, 16s) linear var(--fdelay, 0s) infinite;
+    opacity: .9;
+  }
+  @keyframes fall {
+    0%   { transform: translate3d(0, 0, 0) rotate(0deg); }
+    100% { transform: translate3d(var(--drift, 40px), 115vh, 0) rotate(680deg); }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .leaf { animation: none; transform: translateY(var(--dip,0)) rotate(var(--rot,0)) scale(var(--scale,1)); }
+    .faller { display: none; }
+  }
+
+  /* ---------- seasonal themes ---------- */
+  /* autumn keeps the base warm background above; spring / summer / winter retint */
+  body.season-spring {
+    background:
+      radial-gradient(ellipse 900px 420px at 25% -8%, rgba(150, 210, 120, .30), transparent 62%),
+      radial-gradient(ellipse 700px 360px at 82% -6%, rgba(120, 200, 150, .22), transparent 60%),
+      #f3faec;
+  }
+  body.season-summer {
+    background:
+      radial-gradient(circle 360px at 90% 1%, rgba(255, 214, 92, .60), transparent 62%),
+      radial-gradient(ellipse 1100px 520px at 30% -10%, rgba(255, 238, 168, .42), transparent 62%),
+      #fffef4;
+  }
+  body.season-winter {
+    background:
+      radial-gradient(ellipse 900px 420px at 25% -8%, rgba(180, 214, 240, .44), transparent 62%),
+      radial-gradient(ellipse 700px 360px at 82% -6%, rgba(150, 190, 225, .32), transparent 60%),
+      #eef4fb;
+  }
+
+  /* snowflakes reuse the .faller fall animation */
+  .faller.snow { filter: drop-shadow(0 0 2px rgba(120, 160, 200, .55)); opacity: .95; }
+
+  /* summer sun */
+  #sun {
+    position: fixed;
+    top: -46px; right: 30px;
+    width: 120px; height: 120px;
+    pointer-events: none;
+    z-index: 61;
+  }
+  #sun .sun-core {
+    position: absolute; inset: 34px;
+    border-radius: 50%;
+    background: radial-gradient(circle, #fff6d0, #ffdc6e 58%, #ffc63c);
+    box-shadow: 0 0 40px 16px rgba(255, 205, 85, .6);
+  }
+  #sun .sun-rays {
+    position: absolute; inset: 0;
+    border-radius: 50%;
+    background: repeating-conic-gradient(from 0deg, rgba(255, 210, 90, .6) 0deg 5deg, transparent 5deg 16deg);
+    -webkit-mask: radial-gradient(circle, transparent 26px, #000 30px, #000 54px, transparent 60px);
+    mask: radial-gradient(circle, transparent 26px, #000 30px, #000 54px, transparent 60px);
+    animation: sunspin 70s linear infinite;
+  }
+  @keyframes sunspin { to { transform: rotate(360deg); } }
+  @media (prefers-reduced-motion: reduce) {
+    #sun .sun-rays { animation: none; }
+  }
+
+  /* ---------- header ---------- */
+  header {
+    margin: 64px 18px 0;
+    padding: 16px 26px 14px;
+    background: linear-gradient(120deg, #a34d0a, #d97614 55%, #efa23b);
+    border-radius: var(--radius);
+    color: #fff8ec;
+    box-shadow: var(--shadow);
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    flex-wrap: wrap;
+    position: relative;
+    z-index: 10;
+  }
+  header .brand { display: flex; align-items: center; gap: 10px; }
+  header .leaf-mark { display: inline-flex; filter: drop-shadow(0 2px 2px rgba(70,35,0,.35)); }
+  header h1 {
+    font-size: 2rem;
+    letter-spacing: .3px;
+    font-weight: 800;
+  }
+  header .tagline {
+    font-size: .95rem;
+    opacity: .92;
+    font-weight: 500;
+    font-style: italic;
+  }
+  body.font-plain header .tagline { font-style: normal; }
+
+  .header-right {
+    margin-left: auto;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex-wrap: wrap;
+  }
+  .free-banner {
+    background: rgba(255, 248, 230, .22);
+    border: 1.5px dashed rgba(255, 248, 230, .75);
+    padding: 4px 12px;
+    border-radius: 999px;
+    font-size: .8rem;
+    font-weight: 700;
+    letter-spacing: .4px;
+  }
+
+  /* ---------- segmented toggles (font + voice) ---------- */
+  .seg-toggle {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    background: rgba(255, 248, 230, .18);
+    border: 1.5px solid rgba(255, 248, 230, .45);
+    border-radius: 999px;
+    padding: 3px;
+  }
+  .seg-toggle .ft-label {
+    font-size: .7rem;
+    font-weight: 700;
+    letter-spacing: .6px;
+    text-transform: uppercase;
+    opacity: .85;
+    padding: 0 6px 0 8px;
+  }
+  .ft-btn {
+    font: inherit;
+    font-size: .78rem;
+    font-weight: 700;
+    color: #fff8ec;
+    background: transparent;
+    border: none;
+    border-radius: 999px;
+    padding: 4px 12px;
+    cursor: pointer;
+    transition: background .15s ease, color .15s ease;
+  }
+  .ft-btn[data-font="fancy"] { font-family: var(--font-fancy); }
+  .ft-btn[data-font="plain"] { font-family: var(--font-plain); }
+  .ft-btn.active {
+    background: #fff8ec;
+    color: #a34d0a;
+    box-shadow: 0 1px 4px rgba(70, 35, 0, .25);
+  }
+
+  .fs-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font: inherit;
+    font-size: .78rem;
+    font-weight: 700;
+    color: #fff8ec;
+    background: rgba(255, 248, 230, .18);
+    border: 1.5px solid rgba(255, 248, 230, .55);
+    border-radius: 999px;
+    padding: 5px 13px;
+    cursor: pointer;
+    transition: background .15s ease, color .15s ease;
+  }
+  .fs-btn:hover { background: #fff8ec; color: #a34d0a; }
+  .fs-btn svg { width: 15px; height: 15px; }
+
+  /* ---------- layout ---------- */
+  main {
+    flex: 1;
+    display: flex;
+    gap: 16px;
+    padding: 16px 18px 18px;
+    min-height: 0;
+    position: relative;
+    z-index: 10;
+  }
+  aside {
+    width: 265px;
+    flex-shrink: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    overflow-y: auto;
+  }
+  aside .aside-title {
+    font-size: .78rem;
+    font-weight: 700;
+    letter-spacing: 1.2px;
+    text-transform: uppercase;
+    color: var(--ink-soft);
+    padding-left: 4px;
+  }
+
+  .model-card {
+    background: var(--paper);
+    border: 2px solid #eadfce;
+    border-radius: var(--radius);
+    padding: 13px 15px;
+    cursor: pointer;
+    text-align: left;
+    font: inherit;
+    color: inherit;
+    box-shadow: 0 2px 8px rgba(90, 60, 20, .06);
+    transition: transform .15s ease, border-color .15s ease, box-shadow .15s ease;
+    position: relative;
+  }
+  .model-card:hover { transform: translateY(-2px); box-shadow: var(--shadow); }
+  .model-card.active { border-color: var(--mc, var(--amber)); box-shadow: 0 0 0 3px color-mix(in srgb, var(--mc, var(--amber)) 25%, transparent), var(--shadow); }
+  .model-card .row1 { display: flex; align-items: center; gap: 8px; }
+  .model-card .m-name { font-weight: 800; font-size: 1.15rem; color: var(--mc, var(--ink)); }
+  .badge-free {
+    margin-left: auto;
+    background: #e8f5e2;
+    color: #3c7a2a;
+    border: 1px solid #bfdfb2;
+    font-size: .66rem;
+    font-weight: 800;
+    letter-spacing: .6px;
+    padding: 2px 8px;
+    border-radius: 999px;
+  }
+  .ribbon {
+    position: absolute;
+    top: -10px;
+    right: 14px;
+    background: linear-gradient(120deg, var(--gold), var(--amber));
+    color: #5b3a05;
+    font-size: .62rem;
+    font-weight: 900;
+    letter-spacing: .8px;
+    padding: 3px 9px;
+    border-radius: 999px;
+    box-shadow: 0 2px 6px rgba(120, 80, 10, .3);
+  }
+  .trait { color: var(--amber); font-size: .82rem; margin-top: 4px; font-weight: 600; }
+  .m-blurb { font-size: .82rem; color: var(--ink-soft); margin-top: 5px; line-height: 1.4; }
+  .m-rank { font-size: .74rem; font-weight: 700; margin-top: 6px; color: var(--mc, var(--ink)); }
+
+  #modelList { display: flex; flex-direction: column; gap: 12px; }
+  .topic-list { display: flex; flex-wrap: wrap; gap: 6px; }
+  .topic-chip {
+    font: inherit;
+    font-size: .76rem;
+    font-weight: 700;
+    border: 1.5px solid #e3d7c3;
+    background: var(--paper);
+    color: var(--ink-soft);
+    border-radius: 999px;
+    padding: 5px 11px;
+    cursor: pointer;
+    transition: background .15s ease, color .15s ease, border-color .15s ease;
+  }
+  .topic-chip:hover { border-color: var(--tc, var(--amber)); color: var(--tc, var(--ink)); }
+  .topic-chip.active {
+    background: var(--tc, var(--amber));
+    border-color: var(--tc, var(--amber));
+    color: #fff8ec;
+  }
+
+  /* ---------- chat ---------- */
+  .chat {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+    min-width: 0;
+    background: var(--paper);
+    border: 2px solid #eadfce;
+    border-radius: var(--radius);
+    box-shadow: var(--shadow);
+    overflow: hidden;
+  }
+  .chat-head {
+    padding: 10px 18px;
+    border-bottom: 2px solid #f2e8d8;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-size: .85rem;
+    color: var(--ink-soft);
+    background: #fffaf1;
+  }
+  .chat-head .dot { width: 9px; height: 9px; border-radius: 50%; background: var(--mc, var(--amber)); }
+  .chat-head strong { color: var(--mc, var(--ink)); }
+  .chat-head button {
+    margin-left: auto;
+    font: inherit;
+    font-size: .75rem;
+    font-weight: 700;
+    color: var(--ink-soft);
+    background: none;
+    border: 1.5px solid #e3d7c3;
+    border-radius: 999px;
+    padding: 4px 12px;
+    cursor: pointer;
+  }
+  .chat-head button:hover { background: #f7eedd; }
+
+  #messages {
+    flex: 1;
+    overflow-y: auto;
+    padding: 20px 18px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    scroll-behavior: smooth;
+  }
+  .msg { max-width: 78%; line-height: 1.55; font-size: 1rem; animation: pop .25s ease; }
+  @keyframes pop { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
+  .msg.user {
+    align-self: flex-end;
+    background: linear-gradient(120deg, #efa23b, #e2661c);
+    color: #fff8ec;
+    padding: 10px 16px;
+    border-radius: 18px 18px 4px 18px;
+    box-shadow: 0 3px 10px rgba(200, 110, 30, .25);
+  }
+  .msg.ai {
+    align-self: flex-start;
+    background: #fffdf8;
+    border: 2px solid color-mix(in srgb, var(--mc, var(--amber)) 45%, #eadfce);
+    padding: 10px 16px;
+    border-radius: 18px 18px 18px 4px;
+    box-shadow: 0 2px 8px rgba(90, 60, 20, .07);
+  }
+  .msg.ai .who {
+    display: block;
+    font-size: .68rem;
+    font-weight: 800;
+    letter-spacing: .8px;
+    text-transform: uppercase;
+    color: var(--mc, var(--amber));
+    margin-bottom: 3px;
+  }
+  .msg.system {
+    align-self: center;
+    font-size: .75rem;
+    color: var(--ink-soft);
+    background: #f7eedd;
+    padding: 4px 14px;
+    border-radius: 999px;
+  }
+  .typing-dots { display: inline-flex; gap: 4px; padding: 4px 2px; }
+  .typing-dots span {
+    width: 7px; height: 7px; border-radius: 50%;
+    background: var(--mc, var(--amber));
+    opacity: .4;
+    animation: blink 1.3s infinite;
+  }
+  .typing-dots span:nth-child(2) { animation-delay: .2s; }
+  .typing-dots span:nth-child(3) { animation-delay: .4s; }
+  @keyframes blink { 0%, 70%, 100% { opacity: .35; transform: none; } 35% { opacity: 1; transform: translateY(-2px); } }
+
+  form#composer {
+    display: flex;
+    gap: 10px;
+    padding: 12px 14px;
+    border-top: 2px solid #f2e8d8;
+    background: #fffaf1;
+  }
+  #composer input {
+    flex: 1;
+    font: inherit;
+    font-size: .98rem;
+    padding: 11px 16px;
+    border: 2px solid #e3d7c3;
+    border-radius: 999px;
+    background: #fff;
+    color: var(--ink);
+    outline: none;
+    min-width: 0;
+  }
+  #composer input:focus { border-color: var(--amber); }
+  #composer button {
+    font: inherit;
+    font-weight: 800;
+    font-size: .92rem;
+    padding: 0 22px;
+    border: none;
+    border-radius: 999px;
+    background: linear-gradient(120deg, var(--amber), var(--orange));
+    color: #fff8ec;
+    cursor: pointer;
+    box-shadow: 0 3px 10px rgba(200, 110, 30, .3);
+    transition: transform .12s ease;
+  }
+  #composer button:hover { transform: scale(1.03); }
+  #composer button:disabled { opacity: .5; cursor: default; transform: none; }
+
+  /* ---------- water footer ---------- */
+  footer.water-zone {
+    position: relative;
+    height: 90px;
+    flex-shrink: 0;
+    overflow: hidden;
+    z-index: 10;
+  }
+  footer .powered {
+    position: absolute;
+    left: 0; right: 0; top: 6px;
+    text-align: center;
+    font-size: .74rem;
+    color: var(--ink-soft);
+    letter-spacing: .3px;
+    z-index: 3;
+  }
+  footer .powered strong { color: var(--amber); font-weight: 800; }
+  #water {
+    position: absolute;
+    left: 0; right: 0; bottom: 0;
+    height: var(--wlevel, 60px);
+    pointer-events: none;
+    transition: height 1.1s cubic-bezier(.22, 1, .36, 1);
+    z-index: 1;
+  }
+  #water .water-fill {
+    position: absolute;
+    left: 0; right: 0; bottom: 0; top: 11px;
+    background: linear-gradient(180deg, rgba(96, 196, 224, .82), rgba(34, 128, 168, .92));
+    box-shadow: inset 0 10px 22px rgba(255, 255, 255, .18);
+  }
+  #water .wave {
+    position: absolute;
+    left: 0; top: 0;
+    width: calc(100% + 140px);
+    height: 18px;
+    background-repeat: repeat-x;
+    background-size: 140px 18px;
+  }
+  #water .wave-back {
+    background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='140' height='18' viewBox='0 0 140 18'><path d='M0 9 Q 35 0 70 9 T 140 9 L140 18 L0 18 Z' fill='%237fd0e8'/></svg>");
+    opacity: .75;
+    animation: waveDrift 9s linear infinite;
+  }
+  #water .wave-front {
+    top: 4px;
+    background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='140' height='18' viewBox='0 0 140 18'><path d='M0 9 Q 35 18 70 9 T 140 9 L140 18 L0 18 Z' fill='%23268aac'/></svg>");
+    animation: waveDrift 6s linear infinite reverse;
+  }
+  @keyframes waveDrift {
+    from { transform: translateX(0); }
+    to   { transform: translateX(-140px); }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    #water .wave { animation: none; }
+    #water { transition: none; }
+  }
+
+  /* ---------- responsive ---------- */
+  @media (max-width: 760px) {
+    header { margin-top: 58px; padding: 12px 16px 10px; }
+    header h1 { font-size: 1.4rem; }
+    header .tagline { display: none; }
+    .free-banner { display: none; }
+    main { flex-direction: column; padding: 10px; gap: 10px; }
+    aside { width: 100%; flex-direction: column; overflow-y: auto; gap: 7px; max-height: 46vh; }
+    .model-card { min-width: 0; padding: 8px 12px; }
+    .model-card .m-name { font-size: 1.05rem; }
+    .trait { display: none; }
+    .m-blurb { display: none; }
+    .m-rank { margin-top: 2px; }
+    #modelList { gap: 8px; }
+    .chat { min-height: 150px; }
+    .msg { max-width: 90%; }
+    footer.water-zone { height: 74px; }
+  }
+</style>
+</head>
+<body class="font-fancy">
+
+<div id="canopy" aria-hidden="true"></div>
+
+<header>
+  <div class="brand">
+    <span class="leaf-mark" aria-hidden="true">
+      <svg width="26" height="30" viewBox="0 0 40 50" xmlns="http://www.w3.org/2000/svg">
+        <path d="M20 1 C33 9 39 24 20 46 C1 24 7 9 20 1 Z" fill="#ffe3a3"/>
+        <path d="M20 4 L20 43 M20 14 L28 20 M20 14 L12 20 M20 25 L29 32 M20 25 L11 32" stroke="rgba(120,60,0,.5)" stroke-width="1.6" fill="none"/>
+      </svg>
+    </span>
+    <div>
+      <h1>Dapple AI</h1>
+      <div class="tagline">A friendly AI beneath the autumn leaves</div>
+    </div>
+  </div>
+  <div class="header-right">
+    <button type="button" id="fullscreenBtn" class="fs-btn" title="Full screen">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <polyline points="4 9 4 4 9 4"></polyline>
+        <polyline points="20 9 20 4 15 4"></polyline>
+        <polyline points="4 15 4 20 9 20"></polyline>
+        <polyline points="20 15 20 20 15 20"></polyline>
+      </svg>
+      <span class="fs-label">Full screen</span>
+    </button>
+    <div class="seg-toggle" role="group" aria-label="Font style">
+      <span class="ft-label">Font</span>
+      <button type="button" class="ft-btn active" data-font="fancy">Fancy</button>
+      <button type="button" class="ft-btn" data-font="plain">Plain</button>
+    </div>
+    <div class="seg-toggle" id="voiceToggle" role="group" aria-label="Voice">
+      <span class="ft-label">Voice</span>
+      <button type="button" class="ft-btn active" data-voice="off">Off</button>
+      <button type="button" class="ft-btn" data-voice="on">On</button>
+    </div>
+    <div class="free-banner">ALL MODES 100% FREE</div>
+  </div>
+</header>
+
+<main>
+  <aside aria-label="Dapple options">
+    <div class="aside-title">Modes — all free</div>
+    <div id="modelList" role="group" aria-label="Choose a mode"></div>
+    <div class="aside-title">Topic filter</div>
+    <div id="topicList" class="topic-list" role="group" aria-label="Choose a topic filter"></div>
+  </aside>
+
+  <section class="chat" id="chatPanel">
+    <div class="chat-head" id="chatHead">
+      <span class="dot"></span>
+      <span>Chatting with <strong id="headName">Nova</strong> · <span id="headTopic">General</span></span>
+      <button type="button" id="clearBtn">Clear chat</button>
+    </div>
+    <div id="messages" aria-live="polite"></div>
+    <form id="composer" autocomplete="off">
+      <input id="input" type="text" placeholder="Ask Dapple anything…" maxlength="400" aria-label="Message">
+      <button type="submit" id="sendBtn">Send</button>
+    </form>
+  </section>
+</main>
+
+<footer class="water-zone">
+  <div class="powered">Powered by <strong>Claude</strong></div>
+  <div id="water" aria-hidden="true">
+    <div class="water-fill"></div>
+    <div class="wave wave-back"></div>
+    <div class="wave wave-front"></div>
+  </div>
+</footer>
+
+<script>
+'use strict';
+
+/* ================= MODES ================= */
+const MODELS = {
+  nova: {
+    name: 'Nova',
+    color: 'var(--nova)',
+    trait: 'Thoughtful and considered',
+    rank: 'The best',
+    blurb: 'The flagship mode. Warm, careful answers — it takes a moment to reply properly.',
+    delay: [600, 1000],
+    typeSpeed: 18,
+  },
+  micro: {
+    name: 'Micro',
+    color: 'var(--micro)',
+    trait: 'Quick and concise',
+    rank: 'The second best',
+    blurb: 'Small and fast. Short, to-the-point answers with little waiting.',
+    delay: [400, 700],
+    typeSpeed: 14,
+  },
+  years: {
+    name: 'Years',
+    color: 'var(--years)',
+    trait: 'Calm and wise',
+    rank: 'The third best',
+    blurb: 'Older and unhurried. Measured answers, with a little perspective.',
+    delay: [1500, 2500],
+    typeSpeed: 32,
+  },
+};
+
+let activeModel = 'nova';
+let activeTopic = 'general';
+let userName = '';
+let busy = false;
+
+/* ================= HELPERS ================= */
+const pick = arr => arr[Math.floor(Math.random() * arr.length)];
+const nm = () => (userName ? ', ' + userName : '');
+
+function escapeHTML(s) {
+  return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+}
+function format(s) {
+  return escapeHTML(s)
+    .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
+    .replace(/\n/g, '<br>');
+}
+
+/* ---------- tiny math engine ---------- */
+function tryMath(raw) {
+  let t = raw.toLowerCase()
+    .replace(/,/g, '')
+    .replace(/(\d)\s*[x×]\s*(\d)/g, '$1*$2')
+    .replace(/÷/g, '/')
+    .replace(/\bplus\b/g, '+')
+    .replace(/\bminus\b/g, '-')
+    .replace(/\btimes\b|\bmultiplied by\b/g, '*')
+    .replace(/\bdivided by\b|\bover\b/g, '/');
+  const m = t.match(/[\d.()]+(?:\s*[-+*/^]\s*[\d.()]+)+/);
+  if (!m) return null;
+  let expr = m[0];
+  if (!/\d/.test(expr) || !/[-+*/^]/.test(expr)) return null;
+  const open = (expr.match(/\(/g) || []).length;
+  const close = (expr.match(/\)/g) || []).length;
+  if (open !== close) return null;
+  const js = expr.replace(/\^/g, '**');
+  if (!/^[\d.\s+\-*/()]*$/.test(js.replace(/\*\*/g, ''))) return null;
+  try {
+    const val = Function('"use strict"; return (' + js + ');')();
+    if (typeof val === 'number' && isFinite(val)) {
+      return { expr: expr.replace(/\s+/g, ' ').trim(), val: Math.round(val * 1e6) / 1e6 };
+    }
+  } catch (e) { /* not math after all */ }
+  return null;
+}
+
+/* ---------- intent detection ---------- */
+function detectIntent(text) {
+  const t = text.trim().toLowerCase();
+  const math = tryMath(text);
+  if (math) return { kind: 'math', math };
+  const nameMatch = text.match(/(?:my name is|call me|i am called)\s+([a-z][a-z'-]*)/i);
+  if (nameMatch) return { kind: 'name', name: nameMatch[1] };
+  if (/^(hi|hii+|hello|hey|heya|yo|howdy|salaam|salam|assalamu.*|good (morning|afternoon|evening))\b/.test(t)) return { kind: 'greet' };
+  if (/how are you|how('| a)?re you|how r u|hows it going|how's it going/.test(t)) return { kind: 'howru' };
+  if (/who are you|what are you|your name|about yourself/.test(t)) return { kind: 'who' };
+  if (/\bjoke\b|make me laugh|something funny/.test(t)) return { kind: 'joke' };
+  if (/\bstory\b|once upon/.test(t)) return { kind: 'story' };
+  if (/\briddle\b/.test(t)) return { kind: 'riddle' };
+  if (/thank|thanks|thx|shukr/.test(t)) return { kind: 'thanks' };
+  if (/^(bye|goodbye|good night|see you|gtg|cya)\b/.test(t)) return { kind: 'bye' };
+  if (/what can you do|\bhelp\b|abilities|features/.test(t)) return { kind: 'help' };
+  if (/best mode|which mode|best model|which model|\bnova\b|\bmicro\b|\byears\b/.test(t)) return { kind: 'models' };
+  if (/favou?rite/.test(t)) return { kind: 'fav' };
+  if (/^(why|how|what|where|when|who|which|can|do|does|is|are|should)\b|\?$/.test(t)) return { kind: 'question' };
+  return { kind: 'chat' };
+}
+
+/* ---------- shared bits ---------- */
+const topicOf = text => {
+  const words = text.replace(/[^\w\s']/g, '').split(/\s+/).filter(w =>
+    w.length > 3 && !/^(what|when|where|which|whats|does|about|your|with|that|this|have|from|will|would|could|should|there|their|really|please)$/i.test(w));
+  return words.length ? words.slice(0, 3).join(' ') : 'that';
+};
+
+/* ================= RESPONSE ENGINES (calm tone) ================= */
+const NOVA = {
+  greet: () => pick([
+    `Hello${nm()}. Good to see you. What would you like to look at — a question, a story, or some math?`,
+    `Hi${nm()}. I'm here whenever you're ready. Ask me anything.`,
+    `Welcome back${nm()}. What's on your mind today?`,
+  ]),
+  howru: () => `I'm doing well, thank you${nm()}. It's quiet and pleasant here under the leaves. How are you?`,
+  who: () => `I'm **Nova**, Dapple's main mode — considered and careful, and free to use. I take a moment to think before I answer. Ask me something and see.`,
+  name: n => `Nice to meet you, **${n}**. I'll remember that. So, ${n}, what would you like to talk about?`,
+  math: m => pick([
+    `Working it through: **${m.expr} = ${m.val}**. ${m.val === Math.floor(m.val) ? 'A clean result.' : 'It comes out with decimals.'} Another, if you like.`,
+    `That comes to **${m.expr} = ${m.val}**. Happy to take another.`,
+  ]),
+  joke: () => pick([
+    `Here's one: why don't scientists trust atoms? Because they make up everything. Want another?`,
+    `What do you call a bear with no teeth? A gummy bear. I have a few more if you'd like.`,
+    `Why did the leaf go to the doctor? It was feeling a little green. Shall I keep going?`,
+    `What does a cloud wear under its raincoat? Thunderwear. Another?`,
+  ]),
+  story: () => {
+    const hero = pick(['a small fox', 'a squirrel', 'a sleepy hedgehog', 'a young falcon']);
+    const found = pick(['a golden acorn', 'a map drawn on a maple leaf', 'a door in an oak tree', 'a lantern that never went out']);
+    const end = pick(['and shared it with the whole forest', 'and became a quiet legend of the woods', 'and learned that home was the real treasure all along']);
+    return `Once upon a time, ${hero} found ${found} beneath the orange canopy. Through a few adventures and one windy night, the little hero kept going — ${end}. That's the end. Want a longer one?`;
+  },
+  riddle: () => pick([
+    `Here's one: *I fall in autumn but I'm not rain, I'm orange and yellow and drift down the lane. What am I?* A leaf. Want a trickier one?`,
+    `Try this: *The more you take, the more you leave behind. What am I?* Footsteps. Another?`,
+  ]),
+  thanks: () => `You're welcome${nm()}. Glad to help. What's next?`,
+  bye: () => `Goodbye${nm()}. Come back any time — I'll be here under the canopy.`,
+  help: () => `Happy to help${nm()}. I can:\n• **Answer questions** — why, how, what\n• **Do math** — try "what is 12 × 8?"\n• **Tell jokes, stories, and riddles**\n• **Chat** about whatever's on your mind\nEvery mode on Dapple is free. Where would you like to start?`,
+  models: () => `Of course. Dapple has three modes, all free and all fine to use:\n• **Nova** — the best. Considered, warm answers.\n• **Micro** — the second best. Quick and concise.\n• **Years** — the third best. Calm, with a little perspective.\nThere's no wrong choice — just three kinds of good.`,
+  fav: () => pick([
+    `Good question. I think mine is the moment an orange leaf lets go of its branch. What's yours${nm()}?`,
+    `I think mine is the early light coming through the yellow leaves — it's what I'm named after. Tell me yours.`,
+  ]),
+  question: text => pick([
+    `Good question${nm()}. My take on **${topicOf(text)}**: it's usually simpler than it first looks — a few pieces working together. Tell me what you already know and I'll walk through it with you.`,
+    `I think **${topicOf(text)}** is best approached from the *why* first, and the *how* tends to follow. Give me one more detail and I'll go a bit deeper.`,
+  ]),
+  chat: text => pick([
+    `I hear you${nm()} — "${text.trim()}". Worth thinking about. Tell me a little more.`,
+    `Understood. Say a bit more about that${nm()} — I'm listening.`,
+  ]),
+};
+
+const MICRO = {
+  greet: () => pick([`Hi${nm()}. Ready when you are.`, `Hello. What do you need?`, `Hi there. Ask away.`]),
+  howru: () => `Doing fine, thanks. You?`,
+  who: () => `I'm **Micro** — Dapple's second-best mode. Small and quick, straight to the point. Free to use.`,
+  name: n => `Hi **${n}**. Noted. What next?`,
+  math: m => pick([`**${m.expr} = ${m.val}**.`, `That's **${m.val}**.`, `**${m.val}**. Next one?`]),
+  joke: () => pick([
+    `Why did the bicycle fall over? It was two-tired.`,
+    `What do you call cheese that isn't yours? Nacho cheese.`,
+    `Why can't your nose be 12 inches long? Then it'd be a foot.`,
+  ]),
+  story: () => `A short one: a squirrel raced the wind, lost by a whisker, and the wind carried it home anyway. That's the end. Nova tells longer ones.`,
+  riddle: () => `What has keys but can't open doors? A piano. Another?`,
+  thanks: () => `Anytime${nm()}.`,
+  bye: () => `Bye for now.`,
+  help: () => `I can do questions, math, jokes, short stories, and riddles. I'm the quick mode — brief answers. All modes are free.`,
+  models: () => `Quick version: **Nova** is the best, **Micro** (me) is the second best, **Years** is the third best. All good, all free.`,
+  fav: () => `Autumn mornings, mostly. Yours?`,
+  question: text => pick([
+    `On **${topicOf(text)}**: simpler than it sounds. Want the short version or a bit more?`,
+    `**${topicOf(text)}** — short answer: it depends, but not by much. Say the word for more.`,
+  ]),
+  chat: () => pick([`Got it. What else?`, `Noted.`, `Understood. Anything else?`]),
+};
+
+const YEARS = {
+  greet: () => pick([
+    `Hello${nm()}. Come and sit a while. I'm always glad of a good question.`,
+    `Welcome${nm()}. Take your time — I certainly will. What would you like to know?`,
+    `Good day${nm()}. There's no hurry here. What shall we think about?`,
+  ]),
+  howru: () => `I'm as well as an old oak in a gentle wind, thank you${nm()}. And you?`,
+  who: () => `I'm **Years**, the third-best mode on Dapple. I've seen a good many seasons. I'm slower than Nova and Micro, but I think a slower answer is often a better one. And like all of Dapple, I'm free.`,
+  name: n => `**${n}** — a good name. I'll keep it safe. Now then, ${n}, what shall we think about?`,
+  math: m => pick([
+    `Let me take a moment. There: **${m.expr} = ${m.val}**. Some things you don't forget.`,
+    `I've worked this one many times: **${m.expr} = ${m.val}**. Give me another if you like.`,
+  ]),
+  joke: () => pick([
+    `An old one: why do trees make poor knitters? They keep dropping their needles. I heard that many autumns ago.`,
+    `Here's one from long ago: what did the big flower say to the little flower? "Hello, bud." Still holds up.`,
+    `A classic: why did the scarecrow win an award? He was outstanding in his field. I've told that one for years.`,
+  ]),
+  story: () => pick([
+    `A story, then. Long ago, when this canopy was only a sapling, a small wren lost her song in a storm. She looked everywhere for it, and found it in the end where she least expected — in the company of a friend she made along the way. That's the end. The old stories are the good ones.`,
+    `Once, many seasons back, a tortoise planted a single acorn and promised to watch over it. The years passed, and the acorn became the tallest oak in the forest. Whose branches do you suppose we sit beneath now? That's the end.`,
+  ]),
+  riddle: () => pick([
+    `An old riddle: *the more of me you take, the more you leave behind. What am I?* Footsteps. I've left a good many.`,
+    `Here's one: *what grows wiser the older it gets, much like me?* A tree. And me, I suppose.`,
+  ]),
+  thanks: () => `You're welcome${nm()}. Kindness is best when it's shared.`,
+  bye: () => `Farewell${nm()}. Walk gently, and come back when you like.`,
+  help: () => `What can these old branches do for you? I can:\n• **Answer questions** — slowly, but with care\n• **Do math** — the numbers and I are old friends\n• **Tell stories, jokes, and riddles**\nI'm the third-best mode, and every one of us is free. What would you like?`,
+  models: () => `I've watched them all grow. **Nova** is the best of us. **Micro** is the second — quick and light. And I, **Years**, am the third — slower, but not worse for it. All three are free. Choose whichever suits you.`,
+  fav: () => `I think mine is the smell of the forest after autumn rain. Many seasons, and it still surprises me. What's yours${nm()}?`,
+  question: text => pick([
+    `**${topicOf(text)}** — I've thought about that for many seasons. What I've learned is that the answer usually grows from small roots: start with what you know, and the rest follows. Tell me more, and I'll share what I have.`,
+    `A fine question. I think **${topicOf(text)}** has layers to it, like tree rings. Which part puzzles you most?`,
+  ]),
+  chat: text => pick([
+    `"${text.trim()}". Let's sit with that a moment. Tell me more.`,
+    `I hear you${nm()}. Go on — I'm listening.`,
+  ]),
+};
+
+const ENGINES = { nova: NOVA, micro: MICRO, years: YEARS };
+
+/* ================= TOPIC FILTERS ================= */
+const TOPICS = {
+  general: {
+    label: 'General', color: 'var(--ink-soft)',
+    introTail: 'No filter right now — ask me anything.',
+  },
+  study: {
+    label: 'Study', color: '#3f7cc4',
+    introTail: 'I can explain topics, quiz you, or plan your revision. What subject?',
+    help: () => `In Study mode I can:\n• **Explain** a topic simply\n• **Quiz** you on it\n• Suggest a **study plan** or revision tips\nWhat subject are we working on?`,
+    recommend: () => pick([
+      `A study tip: try the Pomodoro method — 25 minutes focused, then a 5-minute break.`,
+      `A study tip: teach the topic aloud as if to someone else. The gaps show up quickly.`,
+      `A study tip: space your revision across several days rather than one long cram.`,
+      `A study tip: turn your notes into questions and quiz yourself on them.`,
+      `A study tip: tackle the hardest subject when your energy is highest.`,
+    ]),
+    question: text => `On **${topicOf(text)}**: I'd start by breaking it into small parts, learning one at a time, and quizzing yourself as you go. Which part are you on?`,
+    chat: () => `We're in Study mode, so let's keep it learning-focused. Tell me the subject or topic and I'll help you study it.`,
+  },
+  code: {
+    label: 'Code', color: '#2f8f6b',
+    introTail: 'Ask me about programming — concepts, snippets, or debugging.',
+    help: () => `In Code mode I can:\n• **Explain** a programming concept\n• Show a small **snippet**\n• Give **debugging** tips\nWhich language or problem are you on?`,
+    recommend: () => pick([
+      `Start with **functions** — small, named blocks you can reuse:\nfunction add(a, b) {\n  return a + b;\n}`,
+      `Naming habit: name variables for what they hold, not how they're used. userCount beats x.`,
+      `Read error messages closely — they usually name the file and line. That's half the fix.`,
+      `Practice with small projects: a to-do list, a calculator, a timer. Finishing beats starting.`,
+      `Version control tip: commit small and often, with clear messages.`,
+    ]),
+    question: text => `For **${topicOf(text)}** in code: break the problem into small functions, test each one, then combine them. Which language are you using?`,
+    chat: () => `Code mode here — tell me the language or describe the bug, and I'll help.`,
+  },
+  games: {
+    label: 'Video Games', color: '#b0459b',
+    introTail: 'Want a game recommendation, or to talk about a title?',
+    help: () => `In Video Games mode I can recommend games, talk genres, or chat about a title. What do you like — action, RPG, indie?`,
+    recommend: () => pick([
+      `You might enjoy **The Legend of Zelda: Breath of the Wild** — open, calm, full of discovery.`,
+      `Try **Hollow Knight** — a beautiful, challenging indie adventure.`,
+      `**Stardew Valley** is a relaxing farming game with a lot of heart.`,
+      `**Hades** is a fast, stylish roguelike that's easy to pick up.`,
+      `**Portal 2** is a clever puzzle game with great humour.`,
+      `**Celeste** — a precise platformer with a kind story.`,
+    ]),
+    question: text => `On **${topicOf(text)}** in games: it depends on the genre and platform. Tell me what you usually enjoy and I'll point you somewhere good.`,
+    chat: () => `Video Games mode — tell me a genre or a game you like, and I'll suggest something.`,
+  },
+  series: {
+    label: 'Series', color: '#c0562a',
+    introTail: 'Looking for a series to watch, or want to talk about one?',
+    help: () => `In Series mode I can recommend TV series or chat about ones you like. Drama, comedy, thriller — what's your mood?`,
+    recommend: () => pick([
+      `Try **Breaking Bad** — a slow-burn drama that pays off.`,
+      `**The Office** is an easy, funny comfort watch.`,
+      `**Stranger Things** blends mystery, horror, and nostalgia.`,
+      `**Better Call Saul** is a superb, patient character study.`,
+      `**Ted Lasso** is warm and genuinely kind-hearted.`,
+      `**Dark** is a twisty sci-fi mystery worth the focus.`,
+    ]),
+    question: text => `On **${topicOf(text)}** in series: tell me a show you already liked and I'll match the tone.`,
+    chat: () => `Series mode — name a genre or a show you enjoyed and I'll recommend one.`,
+  },
+  anime: {
+    label: 'Anime', color: '#d4508a',
+    introTail: 'Want an anime recommendation, or to talk about one?',
+    help: () => `In Anime mode I can recommend anime or chat about series. Shonen, slice-of-life, film — what do you like?`,
+    recommend: () => pick([
+      `Try **Fullmetal Alchemist: Brotherhood** — a complete, tightly-told story.`,
+      `**Spy x Family** is warm, funny, and easy to start.`,
+      `**Attack on Titan** is intense and plot-heavy.`,
+      `**Demon Slayer** has gorgeous animation and clear stakes.`,
+      `For a film: **Your Name** is beautiful and self-contained.`,
+      `**Death Note** is a gripping cat-and-mouse thriller.`,
+    ]),
+    question: text => `On **${topicOf(text)}** in anime: tell me one you already enjoyed and I'll find something similar.`,
+    chat: () => `Anime mode — name a genre or a title you liked and I'll suggest one.`,
+  },
+  music: {
+    label: 'Music', color: '#7a55c4',
+    introTail: 'Want a listening suggestion, or to talk genres?',
+    help: () => `In Music mode I can suggest genres, artists, or playlists for a mood. Focus, calm, energy — what are you after?`,
+    recommend: () => pick([
+      `For focus: try lo-fi hip hop or ambient piano in the background.`,
+      `Classic rock to start with: Queen, Led Zeppelin, The Beatles.`,
+      `To unwind: jazz like Miles Davis or John Coltrane.`,
+      `For energy while you work: upbeat pop or funk.`,
+      `For calm evenings: acoustic or soft instrumental playlists.`,
+    ]),
+    question: text => `On **${topicOf(text)}** in music: tell me a mood or an artist you like and I'll build from there.`,
+    chat: () => `Music mode — give me a mood or a favourite artist and I'll suggest something.`,
+  },
+  movies: {
+    label: 'Movies', color: '#b8862a',
+    introTail: 'Looking for a film to watch, or want to talk about one?',
+    help: () => `In Movies mode I can recommend films or chat about them. Action, drama, animation — what's your mood?`,
+    recommend: () => pick([
+      `Try **Inception** — a clever, layered thriller.`,
+      `**Spirited Away** is a gorgeous, gentle animated film.`,
+      `**Parasite** is sharp and surprising.`,
+      `**Interstellar** for big, emotional science fiction.`,
+      `**Spider-Man: Into the Spider-Verse** looks and moves like nothing else.`,
+      `**Coco** is warm and beautifully told.`,
+    ]),
+    question: text => `On **${topicOf(text)}** in movies: name a film you loved and I'll match its tone.`,
+    chat: () => `Movies mode — tell me a genre or a film you liked and I'll recommend one.`,
+  },
+  sports: {
+    label: 'Sports', color: '#3f9a4a',
+    introTail: 'Want to talk sports, or need a place to start watching?',
+    help: () => `In Sports mode I can talk about sports, rules, or what to watch. Football, basketball, tennis, F1 — pick one.`,
+    recommend: () => pick([
+      `Football (soccer): the World Cup and the Champions League are the biggest stages.`,
+      `Basketball: fast and high-scoring — great for highlights if you're new.`,
+      `Tennis: a Grand Slam final is a good first watch.`,
+      `Formula 1: strategy plus speed; qualifying and race day both matter.`,
+      `Cricket: a longer game with deep tactics — start with a T20 match.`,
+    ]),
+    question: text => `On **${topicOf(text)}** in sports: tell me which sport and I'll explain or suggest what to watch.`,
+    chat: () => `Sports mode — tell me a sport you like and we'll go from there.`,
+  },
+  science: {
+    label: 'Science', color: '#2f8fb3',
+    introTail: 'Ask me how something works, or want a fun fact?',
+    help: () => `In Science mode I can explain how things work or share facts. Space, biology, physics — what interests you?`,
+    recommend: () => pick([
+      `Fact: light takes about 8 minutes to travel from the Sun to Earth.`,
+      `Fact: octopuses have three hearts and blue blood.`,
+      `Fact: water is unusual — it expands when it freezes.`,
+      `Fact: your body has roughly 37 trillion cells.`,
+      `Fact: sealed honey can last thousands of years without spoiling.`,
+    ]),
+    question: text => `On **${topicOf(text)}** in science: the short version is that it usually comes down to a few simple rules interacting. Which part would you like unpacked?`,
+    chat: () => `Science mode — ask me how something works, or say "fact" for a quick one.`,
+  },
+};
+const TOPIC_KEYS = Object.keys(TOPICS);
+
+function modeTopicIntro(modelKey, topicKey) {
+  const mName = MODELS[modelKey].name;
+  if (topicKey === 'general') {
+    return {
+      nova: `${mName} here. I'll take my time and give you a careful answer. What can I help with?`,
+      micro: `${mName} here. Second best, and quick. What do you need?`,
+      years: `${mName} here. The third mode — slower, but glad to help. What shall we think about?`,
+    }[modelKey];
+  }
+  return `${mName} here, now filtering for ${TOPICS[topicKey].label}. ${TOPICS[topicKey].introTail}`;
+}
+
+function topicReply(topicKey, modelKey, intent, text) {
+  const t = TOPICS[topicKey];
+  const engine = ENGINES[modelKey];
+  const wantsRec = /\brecommend|suggest|any good|what should i|give me|\bideas?\b|\bbest\b|something to (watch|play|read|listen|study|do)|\bfact\b|\btip\b/i.test(text);
+  switch (intent.kind) {
+    case 'greet': return `Hello${nm()}. ${t.introTail}`;
+    case 'help': return t.help();
+    case 'thanks': return engine.thanks();
+    case 'bye': return engine.bye();
+    case 'howru': return engine.howru();
+    case 'who': return `I'm **${MODELS[modelKey].name}**, and right now I'm filtering everything for **${t.label}**. ${t.introTail}`;
+    case 'models': return engine.models();
+  }
+  if (wantsRec) return t.recommend();
+  if (intent.kind === 'question') return t.question(text);
+  return t.chat(text);
+}
+
+function generateReply(modelKey, text) {
+  const engine = ENGINES[modelKey];
+  const intent = detectIntent(text);
+  if (intent.kind === 'name') {
+    const n = intent.name.charAt(0).toUpperCase() + intent.name.slice(1).toLowerCase();
+    userName = n;
+    return engine.name(n);
+  }
+  if (activeTopic !== 'general') {
+    if (intent.kind === 'math') return engine.math(intent.math);
+    return topicReply(activeTopic, modelKey, intent, text);
+  }
+  switch (intent.kind) {
+    case 'math': return engine.math(intent.math);
+    case 'greet': return engine.greet();
+    case 'howru': return engine.howru();
+    case 'who': return engine.who();
+    case 'joke': return engine.joke();
+    case 'story': return engine.story();
+    case 'riddle': return engine.riddle();
+    case 'thanks': return engine.thanks();
+    case 'bye': return engine.bye();
+    case 'help': return engine.help();
+    case 'models': return engine.models();
+    case 'fav': return engine.fav();
+    case 'question': return engine.question(text);
+    default: return engine.chat(text);
+  }
+}
+
+/* ================= UI ================= */
+const messagesEl = document.getElementById('messages');
+const inputEl = document.getElementById('input');
+const sendBtn = document.getElementById('sendBtn');
+const chatPanel = document.getElementById('chatPanel');
+const headName = document.getElementById('headName');
+const modelList = document.getElementById('modelList');
+const topicList = document.getElementById('topicList');
+const headTopic = document.getElementById('headTopic');
+
+function buildModelCards() {
+  for (const key of Object.keys(MODELS)) {
+    const m = MODELS[key];
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = 'model-card' + (key === activeModel ? ' active' : '');
+    btn.style.setProperty('--mc', m.color);
+    btn.dataset.model = key;
+    btn.innerHTML = `
+      ${key === 'nova' ? '<span class="ribbon">THE BEST</span>' : ''}
+      <div class="row1"><span class="m-name">${m.name}</span><span class="badge-free">FREE</span></div>
+      <div class="trait">${m.trait}</div>
+      <div class="m-blurb">${m.blurb}</div>
+      <div class="m-rank">${m.rank}</div>`;
+    btn.addEventListener('click', () => selectModel(key));
+    modelList.appendChild(btn);
+  }
+}
+
+function selectModel(key) {
+  if (key === activeModel || busy) return;
+  activeModel = key;
+  document.querySelectorAll('.model-card').forEach(c =>
+    c.classList.toggle('active', c.dataset.model === key));
+  const m = MODELS[key];
+  chatPanel.style.setProperty('--mc', m.color);
+  headName.textContent = m.name;
+  addSystem(`Switched to ${m.name} — ${m.rank}`);
+  const intro = modeTopicIntro(key, activeTopic);
+  addAI(intro, key, true);
+  speak(intro);
+}
+
+function buildTopicChips() {
+  for (const key of TOPIC_KEYS) {
+    const t = TOPICS[key];
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = 'topic-chip' + (key === activeTopic ? ' active' : '');
+    btn.style.setProperty('--tc', t.color);
+    btn.dataset.topic = key;
+    btn.textContent = t.label;
+    btn.addEventListener('click', () => selectTopic(key));
+    topicList.appendChild(btn);
+  }
+}
+
+function selectTopic(key) {
+  if (key === activeTopic || busy) return;
+  activeTopic = key;
+  document.querySelectorAll('.topic-chip').forEach(c =>
+    c.classList.toggle('active', c.dataset.topic === key));
+  const t = TOPICS[key];
+  headTopic.textContent = t.label;
+  inputEl.placeholder = key === 'general' ? 'Ask Dapple anything…' : `Ask about ${t.label.toLowerCase()}…`;
+  addSystem(`Filter set to ${t.label}`);
+  const intro = modeTopicIntro(activeModel, key);
+  addAI(intro, activeModel, true);
+  speak(intro);
+}
+
+function addSystem(text) {
+  const el = document.createElement('div');
+  el.className = 'msg system';
+  el.textContent = text;
+  messagesEl.appendChild(el);
+  scrollDown();
+}
+
+function addUser(text) {
+  const el = document.createElement('div');
+  el.className = 'msg user';
+  el.textContent = text;
+  messagesEl.appendChild(el);
+  waterDrop();
+  scrollDown();
+}
+
+function aiBubble(modelKey) {
+  const m = MODELS[modelKey];
+  const el = document.createElement('div');
+  el.className = 'msg ai';
+  el.style.setProperty('--mc', m.color);
+  el.innerHTML = `<span class="who">${m.name}</span><span class="body"></span>`;
+  messagesEl.appendChild(el);
+  waterDrop();
+  scrollDown();
+  return el;
+}
+
+function addAI(text, modelKey, instant) {
+  const el = aiBubble(modelKey);
+  const body = el.querySelector('.body');
+  if (instant) { body.innerHTML = format(text); scrollDown(); return Promise.resolve(); }
+  return typeOut(body, text, MODELS[modelKey].typeSpeed);
+}
+
+function typeOut(body, text, speed) {
+  return new Promise(resolve => {
+    let i = 0;
+    const tick = () => {
+      i = Math.min(text.length, i + 1 + Math.floor(Math.random() * 2));
+      body.innerHTML = format(text.slice(0, i));
+      scrollDown();
+      if (i < text.length) setTimeout(tick, speed);
+      else resolve();
+    };
+    tick();
+  });
+}
+
+function scrollDown() { messagesEl.scrollTop = messagesEl.scrollHeight; }
+
+/* ================= WATER LEVEL ================= */
+const WATER_MAX = 60, WATER_MIN = 14, WATER_STEP = 7;
+let waterLevel = WATER_MAX;
+function setWater(px) {
+  waterLevel = Math.max(WATER_MIN, Math.min(WATER_MAX, px));
+  document.documentElement.style.setProperty('--wlevel', waterLevel + 'px');
+}
+function waterDrop() { setWater(waterLevel - WATER_STEP); }
+function waterReset() { setWater(WATER_MAX); }
+
+/* ================= VOICE (text-to-speech) ================= */
+const ttsSupported = typeof window !== 'undefined' && 'speechSynthesis' in window;
+const synth = ttsSupported ? window.speechSynthesis : null;
+let voiceOn = false;
+const voiceBtns = document.querySelectorAll('[data-voice]');
+
+/* Approximate ChatGPT's "Maple" — a warm, cheerful American female voice.
+   The real Maple is an OpenAI cloud voice unavailable to the Web Speech API,
+   so we pick the closest warm US-female voice the device offers. */
+let chosenVoice = null;
+const VOICE_PREFS = [
+  // premium / natural US-female voices a Mac or browser may provide
+  'Ava (Premium)', 'Ava (Enhanced)', 'Ava', 'Zoe (Premium)', 'Zoe',
+  'Allison (Enhanced)', 'Allison', 'Samantha (Enhanced)',
+  'Aria', 'Jenny', 'Emma', 'Google US English',
+  // warm / natural macOS personas as fallbacks
+  'Nicky', 'Sandy', 'Flo', 'Shelley', 'Kathy',
+  // solid last resorts
+  'Samantha', 'Karen', 'Serena',
+];
+function pickVoice(voices) {
+  const enUS = voices.filter(v => /^en[-_]us$/i.test(v.lang));
+  const en = voices.filter(v => /^en([-_]|$)/i.test(v.lang) || /english/i.test(v.name));
+  for (const pref of VOICE_PREFS) {
+    const p = pref.toLowerCase();
+    const hit = enUS.find(v => v.name.toLowerCase().includes(p)) || en.find(v => v.name.toLowerCase().includes(p));
+    if (hit) return hit;
+  }
+  return enUS[0] || en[0] || voices[0] || null;
+}
+function loadVoices() {
+  if (!synth) return;
+  const voices = synth.getVoices();
+  if (voices.length) chosenVoice = pickVoice(voices);
+}
+if (synth) {
+  loadVoices();
+  synth.onvoiceschanged = loadVoices;
+}
+
+/* filler interjections to drop from spoken text — the "uh", not the "I think" */
+const FILLERS = /(^|[\s(])(?:uh+|um+|umm+|er+|err+|erm+|ah+|ahh+|oh+|mm+|mmm+|hmm+|hmmm+)(?=[\s,.:;!?…—-]|$)/gi;
+function cleanForSpeech(text) {
+  return text
+    .replace(/\*\*(.+?)\*\*/g, '$1')   // strip bold markers
+    .replace(/\*(.+?)\*/g, '$1')       // strip italic markers
+    .replace(/•/g, '')                 // drop bullet glyphs
+    .replace(FILLERS, '$1')            // remove filler sounds, keep real words like "I think"
+    .replace(/^[\s,.:;…—-]+/, '')      // tidy any leftover leading punctuation
+    .replace(/\s+([,.:;!?…])/g, '$1')  // no space before punctuation
+    .replace(/([,.:;!?…])\s*[,.:;]+/g, '$1')  // collapse punctuation left behind by a removed filler
+    .replace(/\s{2,}/g, ' ')
+    .trim();
+}
+function speak(text) {
+  if (!voiceOn || !synth) return;
+  const clean = cleanForSpeech(text);
+  if (!clean) return;
+  synth.cancel();
+  const u = new SpeechSynthesisUtterance(clean);
+  if (chosenVoice) u.voice = chosenVoice;
+  u.rate = 1.0;   // natural, conversational pace
+  u.pitch = 1.1;  // bright and cheerful, Maple-like
+  synth.speak(u);
+}
+function setVoice(on) {
+  voiceOn = !!on && ttsSupported;
+  voiceBtns.forEach(b => b.classList.toggle('active', b.dataset.voice === (voiceOn ? 'on' : 'off')));
+  if (!voiceOn && synth) synth.cancel();
+  try { localStorage.setItem('dapple-voice', voiceOn ? 'on' : 'off'); } catch (e) { /* ignore */ }
+}
+if (!ttsSupported) {
+  const vt = document.getElementById('voiceToggle');
+  if (vt) vt.style.display = 'none';
+} else {
+  voiceBtns.forEach(b => b.addEventListener('click', () => setVoice(b.dataset.voice === 'on')));
+}
+
+/* ================= SEND ================= */
+async function handleSend(e) {
+  e.preventDefault();
+  const text = inputEl.value.trim();
+  if (!text || busy) return;
+  busy = true;
+  sendBtn.disabled = true;
+  inputEl.value = '';
+  addUser(text);
+
+  const modelKey = activeModel;
+  const m = MODELS[modelKey];
+  const reply = generateReply(modelKey, text);
+
+  const bubble = aiBubble(modelKey);
+  const body = bubble.querySelector('.body');
+  body.innerHTML = '<span class="typing-dots"><span></span><span></span><span></span></span>';
+  scrollDown();
+
+  const wait = m.delay[0] + Math.random() * (m.delay[1] - m.delay[0]);
+  await new Promise(r => setTimeout(r, wait));
+  speak(reply);
+  await typeOut(body, reply, m.typeSpeed);
+
+  busy = false;
+  sendBtn.disabled = false;
+  inputEl.focus();
+}
+
+document.getElementById('composer').addEventListener('submit', handleSend);
+document.getElementById('clearBtn').addEventListener('click', () => {
+  if (busy) return;
+  if (synth) synth.cancel();
+  messagesEl.innerHTML = '';
+  welcome();
+  waterReset();
+});
+
+/* ================= FONT TOGGLE ================= */
+function setFont(f) {
+  const choice = f === 'plain' ? 'plain' : 'fancy';
+  document.body.classList.remove('font-fancy', 'font-plain');
+  document.body.classList.add('font-' + choice);
+  document.querySelectorAll('[data-font]').forEach(b =>
+    b.classList.toggle('active', b.dataset.font === choice));
+  try { localStorage.setItem('dapple-font', choice); } catch (e) { /* ignore */ }
+}
+document.querySelectorAll('[data-font]').forEach(b =>
+  b.addEventListener('click', () => setFont(b.dataset.font)));
+
+/* ================= FULL SCREEN ================= */
+const fullscreenBtn = document.getElementById('fullscreenBtn');
+function fsElement() { return document.fullscreenElement || document.webkitFullscreenElement; }
+function updateFsLabel() {
+  const label = fullscreenBtn && fullscreenBtn.querySelector('.fs-label');
+  if (label) label.textContent = fsElement() ? 'Exit full screen' : 'Full screen';
+}
+function toggleFullscreen() {
+  const el = document.documentElement;
+  if (!fsElement()) {
+    const req = el.requestFullscreen || el.webkitRequestFullscreen;
+    if (req) { const p = req.call(el); if (p && p.catch) p.catch(() => {}); }
+  } else {
+    const exit = document.exitFullscreen || document.webkitExitFullscreen;
+    if (exit) { const p = exit.call(document); if (p && p.catch) p.catch(() => {}); }
+  }
+}
+if (fullscreenBtn) {
+  if (!(document.documentElement.requestFullscreen || document.documentElement.webkitRequestFullscreen)) {
+    fullscreenBtn.style.display = 'none';
+  } else {
+    fullscreenBtn.addEventListener('click', toggleFullscreen);
+    document.addEventListener('fullscreenchange', updateFsLabel);
+    document.addEventListener('webkitfullscreenchange', updateFsLabel);
+  }
+}
+
+function welcome() {
+  addSystem('Welcome to Dapple AI — every mode is free');
+  addAI(
+    'Welcome to **Dapple AI**. I\'m **Nova**, the main mode here, and free to use. Switch between **Nova**, **Micro**, and **Years** for the tone, and pick a **topic filter** — Study, Code, Video Games, Series, Anime and more — to keep me focused on one subject. There\'s also a **Voice** option up top. Everything is free. Ask me anything.',
+    'nova',
+    true
+  );
+}
+
+/* ================= SEASON + SCENE ================= */
+function getSeason(date) {
+  const m = (date || new Date()).getMonth(); // 0 = Jan (Northern Hemisphere)
+  if (m >= 2 && m <= 4) return 'spring';      // Mar–May
+  if (m >= 5 && m <= 7) return 'summer';      // Jun–Aug
+  if (m >= 8 && m <= 10) return 'autumn';     // Sep–Nov
+  return 'winter';                            // Dec–Feb
+}
+function resolveSeason() {
+  try {
+    const p = new URLSearchParams(location.search).get('season');
+    if (p && ['spring', 'summer', 'autumn', 'winter'].includes(p)) return p;
+  } catch (e) { /* ignore */ }
+  return getSeason();
+}
+const SEASON = resolveSeason();
+
+const LEAF_PALETTES = {
+  autumn: ['#e2661c', '#e8940f', '#f5b942', '#d9541e', '#f0a83a', '#c9490f', '#ffcf5c', '#e07b1a', '#f6c04e', '#dd6f13'],
+  spring: ['#8fd35a', '#7cbf4f', '#a4d96b', '#6bbf59', '#9ccc65', '#7fc97f', '#95d16a', '#68b246', '#b3e08a', '#7ec850'],
+  summer: ['#3f8f38', '#4a9e3f', '#5cae4a', '#469a3e', '#59a94b', '#3d8a4f', '#4f9e45', '#57a83c'],
+};
+const SEASON_TAGLINE = {
+  spring: 'A friendly AI among the fresh spring leaves',
+  summer: 'A friendly AI out in the summer sun',
+  autumn: 'A friendly AI beneath the autumn leaves',
+  winter: 'A friendly AI out in the winter snow',
+};
+
+function leafSVG(color, size) {
+  const vein = 'rgba(50,45,12,.30)';
+  return `<svg width="${size}" height="${size * 1.25}" viewBox="0 0 40 50" xmlns="http://www.w3.org/2000/svg">
+    <path d="M20 1 C33 9 39 24 20 46 C1 24 7 9 20 1 Z" fill="${color}"/>
+    <path d="M20 4 L20 43 M20 14 L28 20 M20 14 L12 20 M20 25 L29 32 M20 25 L11 32" stroke="${vein}" stroke-width="1.4" fill="none"/>
+  </svg>`;
+}
+function snowflakeSVG(size) {
+  return `<svg width="${size}" height="${size}" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+    <g stroke="#f2f9ff" stroke-width="1.5" stroke-linecap="round" fill="none">
+      <path d="M12 2V22M2 12H22M4.9 4.9L19.1 19.1M19.1 4.9L4.9 19.1"/>
+      <path d="M12 6l2.2 2M12 6l-2.2 2M12 18l2.2-2M12 18l-2.2-2M6 12l2 2.2M6 12l2-2.2M18 12l-2 2.2M18 12l-2-2.2"/>
+    </g>
+  </svg>`;
+}
+
+function canopyLeaves(palette, density) {
+  const count = Math.max(16, Math.floor((window.innerWidth / 26) * (density || 1)));
+  let html = '';
+  for (let i = 0; i < count; i++) {
+    const color = pick(palette);
+    const size = 22 + Math.random() * 26;
+    const left = (i / count) * 100 + (Math.random() * 2.4 - 1.2);
+    const dip = -14 + Math.random() * 46;
+    const rot = 120 + Math.random() * 120; /* hang downward-ish */
+    const dur = (4 + Math.random() * 3).toFixed(2);
+    const delay = (-Math.random() * 6).toFixed(2);
+    const scale = (0.8 + Math.random() * 0.5).toFixed(2);
+    html += `<div class="leaf" style="left:${left.toFixed(2)}%; top:-6px; --dip:${dip.toFixed(0)}px; --rot:${rot.toFixed(0)}deg; --dur:${dur}s; --delay:${delay}s; --scale:${scale};">${leafSVG(color, size)}</div>`;
+  }
+  return html;
+}
+function plantFallingLeaves(palette) {
+  let fallers = '';
+  for (let i = 0; i < 7; i++) {
+    const color = pick(palette);
+    const size = 16 + Math.random() * 16;
+    const left = Math.random() * 96;
+    const fdur = (14 + Math.random() * 14).toFixed(2);
+    const fdelay = (-Math.random() * 24).toFixed(2);
+    const drift = (Math.random() * 160 - 80).toFixed(0);
+    fallers += `<div class="faller" style="left:${left.toFixed(1)}%; --fdur:${fdur}s; --fdelay:${fdelay}s; --drift:${drift}px;">${leafSVG(color, size)}</div>`;
+  }
+  document.body.insertAdjacentHTML('beforeend', fallers);
+}
+function plantSnow() {
+  let flakes = '';
+  for (let i = 0; i < 30; i++) {
+    const size = 8 + Math.random() * 16;
+    const left = Math.random() * 98;
+    const fdur = (9 + Math.random() * 12).toFixed(2);
+    const fdelay = (-Math.random() * 20).toFixed(2);
+    const drift = (Math.random() * 130 - 65).toFixed(0);
+    flakes += `<div class="faller snow" style="left:${left.toFixed(1)}%; --fdur:${fdur}s; --fdelay:${fdelay}s; --drift:${drift}px;">${snowflakeSVG(size)}</div>`;
+  }
+  document.body.insertAdjacentHTML('beforeend', flakes);
+}
+
+function plantScene() {
+  const canopy = document.getElementById('canopy');
+  canopy.innerHTML = '';
+  document.querySelectorAll('.faller, #sun').forEach(el => el.remove());
+
+  if (SEASON === 'winter') {           // snowflakes, bare canopy
+    plantSnow();
+    return;
+  }
+  if (SEASON === 'summer') {           // sun + sparse green canopy, nothing falling
+    document.body.insertAdjacentHTML('beforeend',
+      '<div id="sun" aria-hidden="true"><div class="sun-rays"></div><div class="sun-core"></div></div>');
+    canopy.innerHTML = canopyLeaves(LEAF_PALETTES.summer, 0.45);
+    return;
+  }
+  if (SEASON === 'spring') {           // green canopy, nothing falling
+    canopy.innerHTML = canopyLeaves(LEAF_PALETTES.spring, 1);
+    return;
+  }
+  // autumn — original: orange/yellow canopy + falling leaves
+  canopy.innerHTML = canopyLeaves(LEAF_PALETTES.autumn, 1);
+  plantFallingLeaves(LEAF_PALETTES.autumn);
+}
+
+/* ================= INIT ================= */
+try {
+  const savedFont = localStorage.getItem('dapple-font');
+  if (savedFont === 'plain' || savedFont === 'fancy') setFont(savedFont);
+} catch (e) { /* ignore */ }
+try {
+  const savedVoice = localStorage.getItem('dapple-voice');
+  if (savedVoice === 'on') setVoice(true);
+} catch (e) { /* ignore */ }
+
+document.body.classList.add('season-' + SEASON);
+const taglineEl = document.querySelector('.tagline');
+if (taglineEl) taglineEl.textContent = SEASON_TAGLINE[SEASON];
+buildModelCards();
+buildTopicChips();
+chatPanel.style.setProperty('--mc', MODELS[activeModel].color);
+plantScene();
+welcome();
+waterReset();
+inputEl.focus();
+let resizeTimer;
+window.addEventListener('resize', () => {
+  clearTimeout(resizeTimer);
+  resizeTimer = setTimeout(plantScene, 300);
+});
+</script>
+</body>
+</html>
