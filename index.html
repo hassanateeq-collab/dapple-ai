@@ -753,12 +753,19 @@ function detectIntent(text) {
   if (/what can you do|\bhelp\b|abilities|features/.test(t)) return { kind: 'help' };
   if (/best mode|which mode|best model|which model|\bnova\b|\bmicro\b|\byears\b/.test(t)) return { kind: 'models' };
   if (/favou?rite/.test(t)) return { kind: 'fav' };
+  if (/what\s+(year|date|day|time)\s+is\s+it|what('|’)?s\s+the\s+(year|date|time|day)|today('|’)?s\s+date|current\s+(year|date|time)|which\s+year\s+(is\s+it|are\s+we)|what\s+day\s+is\s+(it|today)/.test(t)) return { kind: 'date' };
   if (looksLikeGibberish(text)) return { kind: 'gibberish' };
   if (/^(why|how|what|where|when|who|which|can|do|does|is|are|should)\b|\?$/.test(t)) return { kind: 'question' };
   return { kind: 'chat' };
 }
 
 /* ---------- shared bits ---------- */
+function todayWords() {
+  const now = new Date();
+  const DAYS = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
+  const MONTHS = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+  return { day: DAYS[now.getDay()], date: now.getDate(), month: MONTHS[now.getMonth()], year: now.getFullYear(), time: now.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' }) };
+}
 const topicOf = text => {
   const words = text.replace(/[^\w\s']/g, '').split(/\s+/).filter(w =>
     w.length > 3 && !/^(what|when|where|which|whats|does|about|your|with|that|this|have|from|will|would|could|should|there|their|really|please)$/i.test(w));
@@ -807,6 +814,7 @@ const NOVA = {
     `Good question${nm()}. My take on **${topicOf(text)}**: it's usually simpler than it first looks — a few pieces working together. Tell me what you already know and I'll walk through it with you.`,
     `I think **${topicOf(text)}** is best approached from the *why* first, and the *how* tends to follow. Give me one more detail and I'll go a bit deeper.`,
   ]),
+  date: () => { const d = todayWords(); return `Today is **${d.day}, ${d.date} ${d.month} ${d.year}** — it's ${d.time} right now on your clock. Yes, really: **${d.year}**.`; },
   gibberish: () => pick([
     `I think your message got cut off${nm()} — could you type it again?`,
     `I think your message got cut off. Try sending it once more?`,
@@ -839,6 +847,7 @@ const MICRO = {
     `On **${topicOf(text)}**: simpler than it sounds. Want the short version or a bit more?`,
     `**${topicOf(text)}** — short answer: it depends, but not by much. Say the word for more.`,
   ]),
+  date: () => { const d = todayWords(); return `**${d.day}, ${d.date} ${d.month} ${d.year}**. ${d.time}.`; },
   gibberish: () => pick([`I think your message got cut off. Send it again?`, `I think your message got cut off — one more try?`]),
   chat: () => pick([
     `Didn't catch that. Rephrase, or say **help**?`,
@@ -881,6 +890,7 @@ const YEARS = {
     `**${topicOf(text)}** — I've thought about that for many seasons. What I've learned is that the answer usually grows from small roots: start with what you know, and the rest follows. Tell me more, and I'll share what I have.`,
     `A fine question. I think **${topicOf(text)}** has layers to it, like tree rings. Which part puzzles you most?`,
   ]),
+  date: () => { const d = todayWords(); return `Ah, let me check the rings on my trunk... today is **${d.day}, ${d.date} ${d.month} ${d.year}**. The year is **${d.year}** — I've counted every one of them, dear friend.`; },
   gibberish: () => pick([
     `I think your message got cut off, dear friend. Type it once more for me, slowly.`,
     `I think your message got cut off${nm()}. These old eyes are patient — send it again.`,
@@ -908,9 +918,13 @@ function aiSystemPrompt(modelKey) {
     micro: 'You are Micro, the quick mode of Dapple AI. Answer correctly in 1 to 3 short sentences. Brief but complete.',
     years: 'You are Years, the oldest and wisest mode of Dapple AI. Speak calmly, like a kind grandparent, and give a helpful answer in at most 140 words.',
   }[modelKey];
+  const now = new Date();
+  const DAYS = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
+  const MONTHS = ['January','February','March','April','May','June','July','August','September','October','November','December'];
   let p = persona
     + ' Never use emojis. Use plain, friendly language a young person can follow.'
-    + ' You may use **bold**, and for lists put each item on its own line.';
+    + ' You may use **bold**, and for lists put each item on its own line.'
+    + ` Important: today's real date is ${DAYS[now.getDay()]}, ${now.getDate()} ${MONTHS[now.getMonth()]} ${now.getFullYear()}, and the current year is ${now.getFullYear()}. This comes from the user's device clock and is correct — trust it over your training data, and never claim it is an earlier year.`;
   if (activeTopic !== 'general') {
     const t = TOPICS[activeTopic];
     p += ` The user has chosen the "${t.label}" topic filter, so keep every answer about ${t.label.toLowerCase()}. If they ask about something else, answer briefly and gently steer back to ${t.label.toLowerCase()}.`;
@@ -1137,6 +1151,7 @@ async function generateReply(modelKey, text) {
       : engine.gibberish();
   }
   if (intent.kind === 'math') return engine.math(intent.math);
+  if (intent.kind === 'date') return engine.date();   /* device clock — always right, any topic */
 
   /* quick scripted intents — instant and in-character */
   const scriptedKinds = ['greet', 'howru', 'who', 'joke', 'riddle', 'thanks', 'bye', 'help', 'models'];
