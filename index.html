@@ -782,8 +782,8 @@ const NOVA = {
     `I think **${topicOf(text)}** is best approached from the *why* first, and the *how* tends to follow. Give me one more detail and I'll go a bit deeper.`,
   ]),
   gibberish: () => pick([
-    `Hmm — I couldn't make a word out of that${nm()}. Maybe a slip of the keyboard? Try me with a real question, or say **help** to see what I can do.`,
-    `I'll be honest: that didn't look like words to me. Type it again${nm()}, or say **help** and I'll show you what I'm good at.`,
+    `I think your message got cut off${nm()} — could you type it again?`,
+    `I think your message got cut off. Try sending it once more?`,
   ]),
   chat: text => pick([
     `I'll be straight with you${nm()} — I didn't fully understand that. I'm best with **questions**, **math**, **jokes**, **stories**, **riddles**, and the topic filters on the left. Could you rephrase it?`,
@@ -813,7 +813,7 @@ const MICRO = {
     `On **${topicOf(text)}**: simpler than it sounds. Want the short version or a bit more?`,
     `**${topicOf(text)}** — short answer: it depends, but not by much. Say the word for more.`,
   ]),
-  gibberish: () => pick([`That looks like a typo. Try again?`, `Can't read that one. Retype it?`, `Keyboard slip? Give it another go.`]),
+  gibberish: () => pick([`I think your message got cut off. Send it again?`, `I think your message got cut off — one more try?`]),
   chat: () => pick([
     `Didn't catch that. Rephrase, or say **help**?`,
     `Not sure I follow. Try it as a question?`,
@@ -856,8 +856,8 @@ const YEARS = {
     `A fine question. I think **${topicOf(text)}** has layers to it, like tree rings. Which part puzzles you most?`,
   ]),
   gibberish: () => pick([
-    `These old eyes have read many things, but I can't make a word of that${nm()}. Type it once more for me, slowly.`,
-    `Hm. Either that's a language older than I am, or the keyboard slipped. Try again, dear friend.`,
+    `I think your message got cut off, dear friend. Type it once more for me, slowly.`,
+    `I think your message got cut off${nm()}. These old eyes are patient — send it again.`,
   ]),
   chat: text => pick([
     `I'll admit it plainly${nm()} — I didn't quite understand that one. Ask me a question, or say **help**, and these old branches will do their best.`,
@@ -866,6 +866,66 @@ const YEARS = {
 };
 
 const ENGINES = { nova: NOVA, micro: MICRO, years: YEARS };
+
+/* ================= AI BRAIN (free, keyless) ================= */
+const AI_ENDPOINT = 'https://api.llm7.io/v1/chat/completions';
+const AI_MODELS = ['gemma4:31b', 'mistral-Nemo-Instruct-2407'];
+let history = [];
+
+function stripEmojis(s) {
+  return s.replace(/[\u{1F000}-\u{1FAFF}\u{2600}-\u{27BF}\u{2B00}-\u{2BFF}\u{FE0F}\u{200D}]/gu, '').replace(/ {2,}/g, ' ');
+}
+
+function aiSystemPrompt(modelKey) {
+  const persona = {
+    nova: 'You are Nova, the flagship mode of Dapple AI — warm, thoughtful and clear. Give a proper, helpful answer in at most 160 words.',
+    micro: 'You are Micro, the quick mode of Dapple AI. Answer correctly in 1 to 3 short sentences. Brief but complete.',
+    years: 'You are Years, the oldest and wisest mode of Dapple AI. Speak calmly, like a kind grandparent, and give a helpful answer in at most 140 words.',
+  }[modelKey];
+  let p = persona
+    + ' Never use emojis. Use plain, friendly language a young person can follow.'
+    + ' You may use **bold**, and for lists put each item on its own line.';
+  if (activeTopic !== 'general') {
+    const t = TOPICS[activeTopic];
+    p += ` The user has chosen the "${t.label}" topic filter, so keep every answer about ${t.label.toLowerCase()}. If they ask about something else, answer briefly and gently steer back to ${t.label.toLowerCase()}.`;
+  }
+  if (userName) p += ` The user's name is ${userName}.`;
+  p += ' You are part of Dapple AI, which has three free modes: Nova (the best), Micro (the second best) and Years (the third best) — none of them are bad.';
+  return p;
+}
+
+async function askAI(text, modelKey) {
+  const messages = [
+    { role: 'system', content: aiSystemPrompt(modelKey) },
+    ...history.slice(-8),
+    { role: 'user', content: text },
+  ];
+  let lastErr = null;
+  for (const model of AI_MODELS) {
+    try {
+      const ctrl = new AbortController();
+      const timer = setTimeout(() => ctrl.abort(), 40000);
+      const res = await fetch(AI_ENDPOINT, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer unused' },
+        body: JSON.stringify({
+          model,
+          messages,
+          max_tokens: modelKey === 'micro' ? 160 : 450,
+          temperature: 0.7,
+        }),
+        signal: ctrl.signal,
+      });
+      clearTimeout(timer);
+      if (!res.ok) throw new Error('HTTP ' + res.status);
+      const data = await res.json();
+      const out = data.choices && data.choices[0] && data.choices[0].message && data.choices[0].message.content;
+      if (!out || !out.trim()) throw new Error('empty reply');
+      return stripEmojis(out).trim();
+    } catch (e) { lastErr = e; }
+  }
+  throw lastErr || new Error('AI unavailable');
+}
 
 /* ================= TOPIC FILTERS ================= */
 const TOPICS = {
@@ -1037,7 +1097,7 @@ function topicReply(topicKey, modelKey, intent, text) {
   return t.chat(text);
 }
 
-function generateReply(modelKey, text) {
+async function generateReply(modelKey, text) {
   const engine = ENGINES[modelKey];
   const intent = detectIntent(text);
   if (intent.kind === 'name') {
@@ -1045,26 +1105,33 @@ function generateReply(modelKey, text) {
     userName = n;
     return engine.name(n);
   }
-  if (activeTopic !== 'general') {
-    if (intent.kind === 'math') return engine.math(intent.math);
-    return topicReply(activeTopic, modelKey, intent, text);
+  if (intent.kind === 'gibberish') {
+    return activeTopic !== 'general'
+      ? topicReply(activeTopic, modelKey, intent, text)
+      : engine.gibberish();
   }
-  switch (intent.kind) {
-    case 'math': return engine.math(intent.math);
-    case 'greet': return engine.greet();
-    case 'howru': return engine.howru();
-    case 'who': return engine.who();
-    case 'joke': return engine.joke();
-    case 'story': return engine.story();
-    case 'riddle': return engine.riddle();
-    case 'thanks': return engine.thanks();
-    case 'bye': return engine.bye();
-    case 'help': return engine.help();
-    case 'models': return engine.models();
-    case 'fav': return engine.fav();
-    case 'gibberish': return engine.gibberish();
-    case 'question': return engine.question(text);
-    default: return engine.chat(text);
+  if (intent.kind === 'math') return engine.math(intent.math);
+
+  /* quick scripted intents — instant and in-character */
+  const scriptedKinds = ['greet', 'howru', 'who', 'joke', 'riddle', 'thanks', 'bye', 'help', 'models'];
+  if (scriptedKinds.includes(intent.kind)) {
+    return activeTopic !== 'general'
+      ? topicReply(activeTopic, modelKey, intent, text)
+      : engine[intent.kind]();
+  }
+
+  /* everything open-ended goes to the real AI brain */
+  try {
+    return await askAI(text, modelKey);
+  } catch (e) {
+    /* offline / AI down — fall back to the scripted replies */
+    if (activeTopic !== 'general') return topicReply(activeTopic, modelKey, intent, text);
+    switch (intent.kind) {
+      case 'story': return engine.story();
+      case 'fav': return engine.fav();
+      case 'question': return engine.question(text);
+      default: return engine.chat(text);
+    }
   }
 }
 
@@ -1291,15 +1358,22 @@ async function handleSend(e) {
 
   const modelKey = activeModel;
   const m = MODELS[modelKey];
-  const reply = generateReply(modelKey, text);
 
   const bubble = aiBubble(modelKey);
   const body = bubble.querySelector('.body');
   body.innerHTML = '<span class="typing-dots"><span></span><span></span><span></span></span>';
   scrollDown();
 
+  /* think (AI fetch or scripted) while the persona pause runs */
   const wait = m.delay[0] + Math.random() * (m.delay[1] - m.delay[0]);
-  await new Promise(r => setTimeout(r, wait));
+  const [reply] = await Promise.all([
+    generateReply(modelKey, text),
+    new Promise(r => setTimeout(r, wait)),
+  ]);
+
+  history.push({ role: 'user', content: text }, { role: 'assistant', content: reply });
+  if (history.length > 16) history = history.slice(-16);
+
   speak(reply);
   await typeOut(body, reply, m.typeSpeed);
 
@@ -1313,6 +1387,7 @@ document.getElementById('clearBtn').addEventListener('click', () => {
   if (busy) return;
   if (synth) synth.cancel();
   messagesEl.innerHTML = '';
+  history = [];
   welcome();
   waterReset();
 });
@@ -1359,7 +1434,7 @@ if (fullscreenBtn) {
 function welcome() {
   addSystem('Welcome to Dapple AI — every mode is free');
   addAI(
-    'Welcome to **Dapple AI**. I\'m **Nova**, the main mode here, and free to use. Switch between **Nova**, **Micro**, and **Years** for the tone, and pick a **topic filter** — Study, Code, Video Games, Series, Anime and more — to keep me focused on one subject. There\'s also a **Voice** option up top. Everything is free. Ask me anything.',
+    'Welcome to **Dapple AI**. I\'m **Nova**, the main mode here, and free to use. Ask me anything — football, cooking, YouTube, trends, homework, whatever you like. Switch between **Nova**, **Micro**, and **Years** for the tone, and pick a **topic filter** to keep me on one subject. There\'s also a **Voice** option up top. Everything is free.',
     'nova',
     true
   );
