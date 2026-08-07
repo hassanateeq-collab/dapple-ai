@@ -512,9 +512,35 @@
     from { transform: translateX(0); }
     to   { transform: translateX(-140px); }
   }
+
+  /* wave layers bob up and down a little, like real chop */
+  #water .wave-back { animation: waveDrift 9s linear infinite, waveBob 3.2s ease-in-out infinite alternate; }
+  #water .wave-front { animation: waveDrift 6s linear infinite reverse, waveBob 2.3s ease-in-out .6s infinite alternate; }
+  @keyframes waveBob {
+    from { margin-top: 0; }
+    to   { margin-top: 3px; }
+  }
+
+  /* splash droplets */
+  .splash-drop {
+    position: absolute;
+    width: var(--sz, 6px);
+    height: var(--sz, 6px);
+    border-radius: 50% 50% 50% 50% / 60% 60% 40% 40%;
+    background: var(--sc, #7fd0e8);
+    pointer-events: none;
+    z-index: 2;
+    animation: splashArc var(--sd, .9s) cubic-bezier(.2, .6, .6, 1) forwards;
+  }
+  @keyframes splashArc {
+    0%   { transform: translate(0, 0) scale(1); opacity: .95; }
+    45%  { transform: translate(calc(var(--dx, 0px) * .55), calc(var(--sh, 20px) * -1)) scale(1); opacity: 1; }
+    100% { transform: translate(var(--dx, 0px), 8px) scale(.6); opacity: 0; }
+  }
   @media (prefers-reduced-motion: reduce) {
     #water .wave { animation: none; }
     #water { transition: none; }
+    .splash-drop { display: none; }
   }
 
   /* ---------- responsive ---------- */
@@ -1258,15 +1284,43 @@ function typeOut(body, text, speed) {
 
 function scrollDown() { messagesEl.scrollTop = messagesEl.scrollHeight; }
 
-/* ================= WATER LEVEL ================= */
+/* ================= WATER LEVEL + SPLASHES ================= */
 const WATER_MAX = 60, WATER_MIN = 14, WATER_STEP = 7;
 let waterLevel = WATER_MAX;
 function setWater(px) {
   waterLevel = Math.max(WATER_MIN, Math.min(WATER_MAX, px));
   document.documentElement.style.setProperty('--wlevel', waterLevel + 'px');
 }
-function waterDrop() { setWater(waterLevel - WATER_STEP); }
+function waterDrop() {
+  setWater(waterLevel - WATER_STEP);
+  splash(8 + Math.random() * 84, 8);   /* a proper splash where the message "lands" */
+}
 function waterReset() { setWater(WATER_MAX); }
+
+const SPLASH_COLORS = ['#eaf8fd', '#a9e0f2', '#7fd0e8', '#4db3d4', '#268aac'];
+function splash(xPercent, count) {
+  const zone = document.querySelector('footer.water-zone');
+  if (!zone || document.hidden) return;
+  const n = count || 4;
+  for (let i = 0; i < n; i++) {
+    const d = document.createElement('span');
+    d.className = 'splash-drop';
+    const size = 3 + Math.random() * 5;
+    d.style.setProperty('--sz', size.toFixed(1) + 'px');
+    d.style.setProperty('--sc', pick(SPLASH_COLORS));
+    d.style.setProperty('--dx', (Math.random() * 44 - 22).toFixed(0) + 'px');
+    d.style.setProperty('--sh', (10 + Math.random() * 20).toFixed(0) + 'px');
+    d.style.setProperty('--sd', (0.6 + Math.random() * 0.5).toFixed(2) + 's');
+    d.style.left = (xPercent + (Math.random() * 4 - 2)).toFixed(1) + '%';
+    d.style.bottom = 'calc(var(--wlevel, 60px) - 6px)';
+    d.addEventListener('animationend', () => d.remove());
+    zone.appendChild(d);
+  }
+}
+/* ambient splashing — the sea is never still */
+setInterval(() => {
+  if (!document.hidden) splash(Math.random() * 96, 2 + Math.floor(Math.random() * 3));
+}, 1400 + Math.random() * 800);
 
 /* ================= VOICE (text-to-speech) ================= */
 const ttsSupported = typeof window !== 'undefined' && 'speechSynthesis' in window;
