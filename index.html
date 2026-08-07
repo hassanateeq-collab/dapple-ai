@@ -690,6 +690,26 @@ function tryMath(raw) {
 }
 
 /* ---------- intent detection ---------- */
+/* ---------- gibberish detection ---------- */
+function looksLikeGibberish(text) {
+  const words = text.toLowerCase().replace(/[^a-z\s']/g, ' ').split(/\s+/).filter(Boolean);
+  if (!words.length) {
+    // no letters at all (e.g. "00", "!!!", "…") — nothing to understand
+    return text.trim().length > 0 && !/\d\s*[-+*/^]\s*\d/.test(text);
+  }
+  const gib = words.filter(w => {
+    if (w.length < 4) return false;
+    const vowels = (w.match(/[aeiouy]/g) || []).length;
+    if (vowels === 0) return true;                                  // no vowels: "gvgfd"
+    if (vowels / w.length < 0.2 && w.length >= 6) return true;      // barely any vowels: "gvgfgfdcre"
+    if (/[bcdfghjklmnpqrstvwxz]{6,}/.test(w)) return true;          // long consonant run
+    if (/(.)\1{3,}/.test(w)) return true;                           // "aaaa", "ffff"
+    if (w.length >= 5 && (/^[asdfghjkl]+$/.test(w) || /^[qwertyuiop]+$/.test(w) || /^[zxcvbnm]+$/.test(w))) return true; // keyboard mash
+    return false;
+  });
+  return gib.length > 0 && gib.length >= Math.ceil(words.length / 2);
+}
+
 function detectIntent(text) {
   const t = text.trim().toLowerCase();
   const math = tryMath(text);
@@ -707,6 +727,7 @@ function detectIntent(text) {
   if (/what can you do|\bhelp\b|abilities|features/.test(t)) return { kind: 'help' };
   if (/best mode|which mode|best model|which model|\bnova\b|\bmicro\b|\byears\b/.test(t)) return { kind: 'models' };
   if (/favou?rite/.test(t)) return { kind: 'fav' };
+  if (looksLikeGibberish(text)) return { kind: 'gibberish' };
   if (/^(why|how|what|where|when|who|which|can|do|does|is|are|should)\b|\?$/.test(t)) return { kind: 'question' };
   return { kind: 'chat' };
 }
@@ -760,9 +781,13 @@ const NOVA = {
     `Good question${nm()}. My take on **${topicOf(text)}**: it's usually simpler than it first looks — a few pieces working together. Tell me what you already know and I'll walk through it with you.`,
     `I think **${topicOf(text)}** is best approached from the *why* first, and the *how* tends to follow. Give me one more detail and I'll go a bit deeper.`,
   ]),
+  gibberish: () => pick([
+    `Hmm — I couldn't make a word out of that${nm()}. Maybe a slip of the keyboard? Try me with a real question, or say **help** to see what I can do.`,
+    `I'll be honest: that didn't look like words to me. Type it again${nm()}, or say **help** and I'll show you what I'm good at.`,
+  ]),
   chat: text => pick([
-    `I hear you${nm()} — "${text.trim()}". Worth thinking about. Tell me a little more.`,
-    `Understood. Say a bit more about that${nm()} — I'm listening.`,
+    `I'll be straight with you${nm()} — I didn't fully understand that. I'm best with **questions**, **math**, **jokes**, **stories**, **riddles**, and the topic filters on the left. Could you rephrase it?`,
+    `I'm not quite sure what you meant there${nm()}. Try asking it as a question, or say **help** to see everything I can do.`,
   ]),
 };
 
@@ -788,7 +813,11 @@ const MICRO = {
     `On **${topicOf(text)}**: simpler than it sounds. Want the short version or a bit more?`,
     `**${topicOf(text)}** — short answer: it depends, but not by much. Say the word for more.`,
   ]),
-  chat: () => pick([`Got it. What else?`, `Noted.`, `Understood. Anything else?`]),
+  gibberish: () => pick([`That looks like a typo. Try again?`, `Can't read that one. Retype it?`, `Keyboard slip? Give it another go.`]),
+  chat: () => pick([
+    `Didn't catch that. Rephrase, or say **help**?`,
+    `Not sure I follow. Try it as a question?`,
+  ]),
 };
 
 const YEARS = {
@@ -826,9 +855,13 @@ const YEARS = {
     `**${topicOf(text)}** — I've thought about that for many seasons. What I've learned is that the answer usually grows from small roots: start with what you know, and the rest follows. Tell me more, and I'll share what I have.`,
     `A fine question. I think **${topicOf(text)}** has layers to it, like tree rings. Which part puzzles you most?`,
   ]),
+  gibberish: () => pick([
+    `These old eyes have read many things, but I can't make a word of that${nm()}. Type it once more for me, slowly.`,
+    `Hm. Either that's a language older than I am, or the keyboard slipped. Try again, dear friend.`,
+  ]),
   chat: text => pick([
-    `"${text.trim()}". Let's sit with that a moment. Tell me more.`,
-    `I hear you${nm()}. Go on — I'm listening.`,
+    `I'll admit it plainly${nm()} — I didn't quite understand that one. Ask me a question, or say **help**, and these old branches will do their best.`,
+    `Even after all my seasons, some things puzzle me — and that was one. Would you put it another way for me${nm()}?`,
   ]),
 };
 
@@ -997,6 +1030,7 @@ function topicReply(topicKey, modelKey, intent, text) {
     case 'howru': return engine.howru();
     case 'who': return `I'm **${MODELS[modelKey].name}**, and right now I'm filtering everything for **${t.label}**. ${t.introTail}`;
     case 'models': return engine.models();
+    case 'gibberish': return engine.gibberish();
   }
   if (wantsRec) return t.recommend();
   if (intent.kind === 'question') return t.question(text);
@@ -1028,6 +1062,7 @@ function generateReply(modelKey, text) {
     case 'help': return engine.help();
     case 'models': return engine.models();
     case 'fav': return engine.fav();
+    case 'gibberish': return engine.gibberish();
     case 'question': return engine.question(text);
     default: return engine.chat(text);
   }
