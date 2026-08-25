@@ -554,47 +554,47 @@
 
   /* PHONE: chat-first. Slim header, modes as a 3-button row,
      topics as one scrollable strip — the chat gets the rest of the screen. */
-  html:has(body.device-phone) { font-size: 16px; }
-  body.device-phone #canopy { height: 44px; }
-  body.device-phone header {
+  html:has(body.is-compact) { font-size: 16px; }
+  body.is-compact #canopy { height: 44px; }
+  body.is-compact header {
     margin: 26px 8px 0;
     padding: 8px 12px;
     gap: 6px;
     border-radius: 14px;
   }
-  body.device-phone header h1 { font-size: 1.15rem; }
-  body.device-phone header .tagline { display: none; }
-  body.device-phone header .leaf-mark svg { width: 18px; height: 22px; }
-  body.device-phone .header-right { gap: 6px; margin-left: auto; }
-  body.device-phone .free-banner { display: none; }
-  body.device-phone .seg-toggle { padding: 2px; }
-  body.device-phone .seg-toggle .ft-label { display: none; }
-  body.device-phone .ft-btn { font-size: .68rem; padding: 3px 8px; }
-  body.device-phone .fs-btn .fs-label { display: none; }
-  body.device-phone .fs-btn { padding: 4px 8px; }
-  body.device-phone main { flex-direction: column; padding: 6px 8px 8px; gap: 6px; }
-  body.device-phone aside { width: 100%; flex-direction: column; gap: 5px; max-height: none; overflow: visible; }
-  body.device-phone aside .aside-title { display: none; }
-  body.device-phone #modelList { display: flex; flex-direction: row; gap: 6px; }
-  body.device-phone .model-card { flex: 1; min-width: 0; padding: 7px 10px; border-radius: 12px; text-align: center; }
-  body.device-phone .model-card .row1 { justify-content: center; }
-  body.device-phone .model-card .m-name { font-size: .95rem; }
-  body.device-phone .model-card .badge-free,
-  body.device-phone .model-card .ribbon,
-  body.device-phone .trait,
-  body.device-phone .m-blurb { display: none; }
-  body.device-phone .m-rank { margin-top: 1px; font-size: .62rem; }
-  body.device-phone .topic-list { flex-wrap: nowrap; overflow-x: auto; padding-bottom: 3px; -webkit-overflow-scrolling: touch; scrollbar-width: none; }
-  body.device-phone .topic-list::-webkit-scrollbar { display: none; }
-  body.device-phone .topic-chip { flex-shrink: 0; padding: 6px 12px; }
-  body.device-phone .chat { min-height: 0; }
-  body.device-phone .chat-head { padding: 7px 12px; font-size: .78rem; }
-  body.device-phone #messages { padding: 12px 10px; gap: 10px; }
-  body.device-phone .msg { max-width: 92%; font-size: .95rem; }
-  body.device-phone form#composer { padding: 8px; }
-  body.device-phone #composer input { padding: 10px 14px; }
-  body.device-phone footer.water-zone { height: 46px; }
-  body.device-phone footer .powered { top: 2px; font-size: .62rem; }
+  body.is-compact header h1 { font-size: 1.15rem; }
+  body.is-compact header .tagline { display: none; }
+  body.is-compact header .leaf-mark svg { width: 18px; height: 22px; }
+  body.is-compact .header-right { gap: 6px; margin-left: auto; }
+  body.is-compact .free-banner { display: none; }
+  body.is-compact .seg-toggle { padding: 2px; }
+  body.is-compact .seg-toggle .ft-label { display: none; }
+  body.is-compact .ft-btn { font-size: .68rem; padding: 3px 8px; }
+  body.is-compact .fs-btn .fs-label { display: none; }
+  body.is-compact .fs-btn { padding: 4px 8px; }
+  body.is-compact main { flex-direction: column; padding: 6px 8px 8px; gap: 6px; }
+  body.is-compact aside { width: 100%; flex-direction: column; gap: 5px; max-height: none; overflow: visible; }
+  body.is-compact aside .aside-title { display: none; }
+  body.is-compact #modelList { display: flex; flex-direction: row; gap: 6px; }
+  body.is-compact .model-card { flex: 1; min-width: 0; padding: 7px 10px; border-radius: 12px; text-align: center; }
+  body.is-compact .model-card .row1 { justify-content: center; }
+  body.is-compact .model-card .m-name { font-size: .95rem; }
+  body.is-compact .model-card .badge-free,
+  body.is-compact .model-card .ribbon,
+  body.is-compact .trait,
+  body.is-compact .m-blurb { display: none; }
+  body.is-compact .m-rank { margin-top: 1px; font-size: .62rem; }
+  body.is-compact .topic-list { flex-wrap: nowrap; overflow-x: auto; padding-bottom: 3px; -webkit-overflow-scrolling: touch; scrollbar-width: none; }
+  body.is-compact .topic-list::-webkit-scrollbar { display: none; }
+  body.is-compact .topic-chip { flex-shrink: 0; padding: 6px 12px; }
+  body.is-compact .chat { min-height: 0; }
+  body.is-compact .chat-head { padding: 7px 12px; font-size: .78rem; }
+  body.is-compact #messages { padding: 12px 10px; gap: 10px; }
+  body.is-compact .msg { max-width: 92%; font-size: .95rem; }
+  body.is-compact form#composer { padding: 8px; }
+  body.is-compact #composer input { padding: 10px 14px; }
+  body.is-compact footer.water-zone { height: 46px; }
+  body.is-compact footer .powered { top: 2px; font-size: .62rem; }
 
   /* water never overlaps the "powered" text on short footers */
   #water { height: min(var(--wlevel, 60px), calc(100% - 12px)); }
@@ -1606,10 +1606,16 @@ function detectDevice() {
   if (touch) return 'tablet';
   return 'laptop';
 }
+function updateCompact() {
+  /* compact layout: always on phone; on laptop/iPad only when the window is too narrow for the sidebar */
+  const phone = document.body.classList.contains('device-phone');
+  document.body.classList.toggle('is-compact', phone || window.innerWidth < 720);
+}
 function applyDevice(d, replant) {
   if (!DEVICE_LABELS[d]) d = 'laptop';
   document.body.classList.remove('device-phone', 'device-tablet', 'device-laptop');
   document.body.classList.add('device-' + d);
+  updateCompact();
   const lbl = document.getElementById('deviceBtnLabel');
   if (lbl) lbl.textContent = DEVICE_LABELS[d];
   if (replant && typeof plantScene === 'function') plantScene();
@@ -1714,7 +1720,7 @@ function snowflakeSVG(size) {
 }
 
 function canopyLeaves(palette, density) {
-  const phone = document.body.classList.contains('device-phone');
+  const phone = document.body.classList.contains('is-compact');
   const count = Math.max(16, Math.floor((window.innerWidth / (phone ? 20 : 26)) * (density || 1)));
   let html = '';
   for (let i = 0; i < count; i++) {
@@ -1810,6 +1816,7 @@ waterReset();
 inputEl.focus();
 let resizeTimer;
 window.addEventListener('resize', () => {
+  updateCompact();
   clearTimeout(resizeTimer);
   resizeTimer = setTimeout(plantScene, 300);
 });
