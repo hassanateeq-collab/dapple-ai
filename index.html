@@ -543,23 +543,116 @@
     .splash-drop { display: none; }
   }
 
-  /* ---------- responsive ---------- */
-  @media (max-width: 760px) {
-    header { margin-top: 58px; padding: 12px 16px 10px; }
-    header h1 { font-size: 1.4rem; }
-    header .tagline { display: none; }
-    .free-banner { display: none; }
-    main { flex-direction: column; padding: 10px; gap: 10px; }
-    aside { width: 100%; flex-direction: column; overflow-y: auto; gap: 7px; max-height: 46vh; }
-    .model-card { min-width: 0; padding: 8px 12px; }
-    .model-card .m-name { font-size: 1.05rem; }
-    .trait { display: none; }
-    .m-blurb { display: none; }
-    .m-rank { margin-top: 2px; }
-    #modelList { gap: 8px; }
-    .chat { min-height: 150px; }
-    .msg { max-width: 90%; }
-    footer.water-zone { height: 74px; }
+  /* ---------- device layouts ---------- */
+  /* LAPTOP (default): sidebar left, chat right — the base styles above. */
+
+  /* TABLET: same side-by-side layout, narrower sidebar, bigger touch targets */
+  body.device-tablet aside { width: 230px; }
+  body.device-tablet .m-blurb { display: none; }
+  body.device-tablet .topic-chip { padding: 8px 14px; font-size: .82rem; }
+  body.device-tablet .model-card { padding: 12px 14px; }
+
+  /* PHONE: chat-first. Slim header, modes as a 3-button row,
+     topics as one scrollable strip — the chat gets the rest of the screen. */
+  html:has(body.device-phone) { font-size: 16px; }
+  body.device-phone #canopy { height: 44px; }
+  body.device-phone header {
+    margin: 26px 8px 0;
+    padding: 8px 12px;
+    gap: 6px;
+    border-radius: 14px;
+  }
+  body.device-phone header h1 { font-size: 1.15rem; }
+  body.device-phone header .tagline { display: none; }
+  body.device-phone header .leaf-mark svg { width: 18px; height: 22px; }
+  body.device-phone .header-right { gap: 6px; margin-left: auto; }
+  body.device-phone .free-banner { display: none; }
+  body.device-phone .seg-toggle { padding: 2px; }
+  body.device-phone .seg-toggle .ft-label { display: none; }
+  body.device-phone .ft-btn { font-size: .68rem; padding: 3px 8px; }
+  body.device-phone .fs-btn .fs-label { display: none; }
+  body.device-phone .fs-btn { padding: 4px 8px; }
+  body.device-phone main { flex-direction: column; padding: 6px 8px 8px; gap: 6px; }
+  body.device-phone aside { width: 100%; flex-direction: column; gap: 5px; max-height: none; overflow: visible; }
+  body.device-phone aside .aside-title { display: none; }
+  body.device-phone #modelList { display: flex; flex-direction: row; gap: 6px; }
+  body.device-phone .model-card { flex: 1; min-width: 0; padding: 7px 10px; border-radius: 12px; text-align: center; }
+  body.device-phone .model-card .row1 { justify-content: center; }
+  body.device-phone .model-card .m-name { font-size: .95rem; }
+  body.device-phone .model-card .badge-free,
+  body.device-phone .model-card .ribbon,
+  body.device-phone .trait,
+  body.device-phone .m-blurb { display: none; }
+  body.device-phone .m-rank { margin-top: 1px; font-size: .62rem; }
+  body.device-phone .topic-list { flex-wrap: nowrap; overflow-x: auto; padding-bottom: 3px; -webkit-overflow-scrolling: touch; scrollbar-width: none; }
+  body.device-phone .topic-list::-webkit-scrollbar { display: none; }
+  body.device-phone .topic-chip { flex-shrink: 0; padding: 6px 12px; }
+  body.device-phone .chat { min-height: 0; }
+  body.device-phone .chat-head { padding: 7px 12px; font-size: .78rem; }
+  body.device-phone #messages { padding: 12px 10px; gap: 10px; }
+  body.device-phone .msg { max-width: 92%; font-size: .95rem; }
+  body.device-phone form#composer { padding: 8px; }
+  body.device-phone #composer input { padding: 10px 14px; }
+  body.device-phone footer.water-zone { height: 46px; }
+  body.device-phone footer .powered { top: 2px; font-size: .62rem; }
+
+  /* water never overlaps the "powered" text on short footers */
+  #water { height: min(var(--wlevel, 60px), calc(100% - 12px)); }
+
+  /* ---------- device picker overlay ---------- */
+  #devicePicker {
+    position: fixed;
+    inset: 0;
+    z-index: 200;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(74, 50, 32, .45);
+    backdrop-filter: blur(4px);
+    padding: 18px;
+  }
+  #devicePicker.hidden { display: none; }
+  .dp-card {
+    background: var(--paper);
+    border: 2px solid #eadfce;
+    border-radius: 22px;
+    box-shadow: 0 18px 60px rgba(60, 35, 10, .35);
+    padding: 26px 24px 22px;
+    max-width: 430px;
+    width: 100%;
+    text-align: center;
+  }
+  .dp-card h2 { font-size: 1.3rem; margin-bottom: 4px; }
+  .dp-card p { font-size: .85rem; color: var(--ink-soft); margin-bottom: 18px; }
+  .dp-options { display: flex; gap: 10px; }
+  .dp-btn {
+    flex: 1;
+    font: inherit;
+    background: #fffaf1;
+    border: 2px solid #e3d7c3;
+    border-radius: 16px;
+    padding: 14px 6px 12px;
+    cursor: pointer;
+    color: var(--ink);
+    transition: border-color .15s ease, transform .15s ease, box-shadow .15s ease;
+    position: relative;
+  }
+  .dp-btn:hover { transform: translateY(-2px); border-color: var(--amber); box-shadow: var(--shadow); }
+  .dp-btn svg { width: 34px; height: 34px; stroke: var(--orange); margin-bottom: 6px; }
+  .dp-btn .dp-name { display: block; font-weight: 800; font-size: .9rem; }
+  .dp-btn.suggested { border-color: var(--amber); box-shadow: 0 0 0 3px color-mix(in srgb, var(--amber) 25%, transparent); }
+  .dp-btn .dp-suggested {
+    position: absolute;
+    top: -9px; left: 50%;
+    transform: translateX(-50%);
+    background: linear-gradient(120deg, var(--gold), var(--amber));
+    color: #5b3a05;
+    font-size: .56rem;
+    font-weight: 900;
+    letter-spacing: .5px;
+    padding: 2px 8px;
+    border-radius: 999px;
+    white-space: nowrap;
   }
 </style>
 </head>
@@ -581,6 +674,13 @@
     </div>
   </div>
   <div class="header-right">
+    <button type="button" id="deviceBtn" class="fs-btn" title="Change device layout">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <rect x="9" y="4" width="11" height="16" rx="2"></rect>
+        <path d="M4 8h3M4 12h3M4 16h3"></path>
+      </svg>
+      <span id="deviceBtnLabel">Device</span>
+    </button>
     <button type="button" id="fullscreenBtn" class="fs-btn" title="Full screen">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
         <polyline points="4 9 4 4 9 4"></polyline>
@@ -625,6 +725,30 @@
     </form>
   </section>
 </main>
+
+<div id="devicePicker" class="hidden" role="dialog" aria-label="Choose your device">
+  <div class="dp-card">
+    <h2>Which device are you on?</h2>
+    <p>Dapple will shape itself to fit your screen. You can change this any time with the Device button up top.</p>
+    <div class="dp-options">
+      <button type="button" class="dp-btn" data-device="phone">
+        <span class="dp-suggested" hidden>SUGGESTED</span>
+        <svg viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="7" y="2.5" width="10" height="19" rx="2.5"></rect><path d="M10.5 18.5h3"></path></svg>
+        <span class="dp-name">Phone</span>
+      </button>
+      <button type="button" class="dp-btn" data-device="tablet">
+        <span class="dp-suggested" hidden>SUGGESTED</span>
+        <svg viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="4.5" y="2.5" width="15" height="19" rx="2.5"></rect><path d="M10.5 18.5h3"></path></svg>
+        <span class="dp-name">iPad</span>
+      </button>
+      <button type="button" class="dp-btn" data-device="laptop">
+        <span class="dp-suggested" hidden>SUGGESTED</span>
+        <svg viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="4.5" width="16" height="11" rx="1.5"></rect><path d="M2 19h20"></path></svg>
+        <span class="dp-name">Laptop</span>
+      </button>
+    </div>
+  </div>
+</div>
 
 <footer class="water-zone">
   <div class="powered">Powered by <strong>Claude</strong></div>
@@ -1327,7 +1451,7 @@ function splash(xPercent, count) {
     d.style.setProperty('--sh', (10 + Math.random() * 20).toFixed(0) + 'px');
     d.style.setProperty('--sd', (0.6 + Math.random() * 0.5).toFixed(2) + 's');
     d.style.left = (xPercent + (Math.random() * 4 - 2)).toFixed(1) + '%';
-    d.style.bottom = 'calc(var(--wlevel, 60px) - 6px)';
+    d.style.bottom = 'min(calc(var(--wlevel, 60px) - 6px), calc(100% - 14px))';
     d.addEventListener('animationend', () => d.remove());
     zone.appendChild(d);
   }
@@ -1473,6 +1597,41 @@ function setFont(f) {
 document.querySelectorAll('[data-font]').forEach(b =>
   b.addEventListener('click', () => setFont(b.dataset.font)));
 
+/* ================= DEVICE LAYOUT ================= */
+const DEVICE_KEY = 'dapple-device';
+const DEVICE_LABELS = { phone: 'Phone', tablet: 'iPad', laptop: 'Laptop' };
+function detectDevice() {
+  const touch = ('ontouchstart' in window) || navigator.maxTouchPoints > 0;
+  if (touch && window.innerWidth < 700) return 'phone';
+  if (touch) return 'tablet';
+  return 'laptop';
+}
+function applyDevice(d, replant) {
+  if (!DEVICE_LABELS[d]) d = 'laptop';
+  document.body.classList.remove('device-phone', 'device-tablet', 'device-laptop');
+  document.body.classList.add('device-' + d);
+  const lbl = document.getElementById('deviceBtnLabel');
+  if (lbl) lbl.textContent = DEVICE_LABELS[d];
+  if (replant && typeof plantScene === 'function') plantScene();
+}
+function chooseDevice(d) {
+  applyDevice(d, true);
+  try { localStorage.setItem(DEVICE_KEY, d); } catch (e) { /* ignore */ }
+  document.getElementById('devicePicker').classList.add('hidden');
+}
+function openDevicePicker() {
+  const suggested = detectDevice();
+  document.querySelectorAll('.dp-btn').forEach(b => {
+    const isSug = b.dataset.device === suggested;
+    b.classList.toggle('suggested', isSug);
+    b.querySelector('.dp-suggested').hidden = !isSug;
+  });
+  document.getElementById('devicePicker').classList.remove('hidden');
+}
+document.querySelectorAll('.dp-btn').forEach(b =>
+  b.addEventListener('click', () => chooseDevice(b.dataset.device)));
+document.getElementById('deviceBtn').addEventListener('click', openDevicePicker);
+
 /* ================= FULL SCREEN ================= */
 const fullscreenBtn = document.getElementById('fullscreenBtn');
 function fsElement() { return document.fullscreenElement || document.webkitFullscreenElement; }
@@ -1555,11 +1714,12 @@ function snowflakeSVG(size) {
 }
 
 function canopyLeaves(palette, density) {
-  const count = Math.max(16, Math.floor((window.innerWidth / 26) * (density || 1)));
+  const phone = document.body.classList.contains('device-phone');
+  const count = Math.max(16, Math.floor((window.innerWidth / (phone ? 20 : 26)) * (density || 1)));
   let html = '';
   for (let i = 0; i < count; i++) {
     const color = pick(palette);
-    const size = 22 + Math.random() * 26;
+    const size = phone ? 12 + Math.random() * 14 : 22 + Math.random() * 26;
     const left = (i / count) * 100 + (Math.random() * 2.4 - 1.2);
     const dip = -14 + Math.random() * 46;
     const rot = 120 + Math.random() * 120; /* hang downward-ish */
@@ -1633,6 +1793,14 @@ try {
 document.body.classList.add('season-' + SEASON);
 const taglineEl = document.querySelector('.tagline');
 if (taglineEl) taglineEl.textContent = SEASON_TAGLINE[SEASON];
+let savedDevice = null;
+try { savedDevice = localStorage.getItem(DEVICE_KEY); } catch (e) { /* ignore */ }
+if (savedDevice && DEVICE_LABELS[savedDevice]) {
+  applyDevice(savedDevice, false);
+} else {
+  applyDevice(detectDevice(), false);   /* sensible layout behind the picker */
+  openDevicePicker();
+}
 buildModelCards();
 buildTopicChips();
 chatPanel.style.setProperty('--mc', MODELS[activeModel].color);
