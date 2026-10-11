@@ -411,6 +411,70 @@
     padding: 4px 14px;
     border-radius: 999px;
   }
+  /* ---------- generated media (images + clips) ---------- */
+  .media-wrap { margin-top: 9px; }
+  .media-wrap.loading {
+    width: 230px; height: 230px; max-width: 100%;
+    border-radius: 15px;
+    background: linear-gradient(110deg, #f1e4cf 25%, #fff8ea 50%, #f1e4cf 75%);
+    background-size: 220% 100%;
+    animation: shimmer 1.3s linear infinite;
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    gap: 8px; color: var(--ink-soft); font-size: .82rem; font-weight: 600;
+  }
+  .media-wrap.loading .media-leaf { width: 26px; height: 32px; animation: sway 1.6s ease-in-out infinite alternate; }
+  @keyframes shimmer { to { background-position: -220% 0; } }
+  .gen-img {
+    width: 320px; max-width: 100%;
+    border-radius: 15px; display: block;
+    box-shadow: var(--shadow);
+    border: 2px solid color-mix(in srgb, var(--mc, var(--amber)) 35%, #eadfce);
+  }
+  .clip-player {
+    position: relative; width: 320px; max-width: 100%;
+    aspect-ratio: 1 / 1;
+    border-radius: 15px; overflow: hidden;
+    box-shadow: var(--shadow);
+    border: 2px solid color-mix(in srgb, var(--mc, var(--amber)) 35%, #eadfce);
+    background: #20160c;
+  }
+  .clip-frame {
+    position: absolute; inset: 0;
+    width: 100%; height: 100%; object-fit: cover;
+    opacity: 0;
+    animation: clipCycle 7.5s infinite;
+  }
+  @keyframes clipCycle {
+    0%   { opacity: 0; transform: scale(1.02); }
+    6%   { opacity: 1; }
+    27%  { opacity: 1; transform: scale(1.14); }
+    33%  { opacity: 0; transform: scale(1.16); }
+    100% { opacity: 0; transform: scale(1.16); }
+  }
+  .clip-frame.kb { opacity: 1; animation: kenburns 9s ease-in-out infinite alternate; }
+  @keyframes kenburns {
+    from { transform: scale(1.02) translate(0, 0); }
+    to   { transform: scale(1.18) translate(-3%, -2%); }
+  }
+  .clip-badge {
+    position: absolute; top: 8px; left: 8px; z-index: 2;
+    background: rgba(20, 14, 8, .6); color: #fff8ec;
+    font-size: .6rem; font-weight: 800; letter-spacing: .5px;
+    padding: 3px 8px; border-radius: 999px;
+    display: flex; align-items: center; gap: 4px;
+  }
+  .clip-badge::before { content: ''; width: 7px; height: 7px; border-radius: 50%; background: #ff5b5b; animation: blink 1.3s infinite; }
+  .media-actions { display: flex; gap: 12px; margin-top: 6px; }
+  .media-actions a {
+    font-size: .74rem; font-weight: 800; color: var(--mc, var(--amber));
+    text-decoration: none; cursor: pointer;
+  }
+  .media-actions a:hover { text-decoration: underline; }
+  @media (prefers-reduced-motion: reduce) {
+    .media-wrap.loading { animation: none; }
+    .clip-frame { animation-duration: 9s; }
+  }
+
   .typing-dots { display: inline-flex; gap: 4px; padding: 4px 2px; }
   .typing-dots span {
     width: 7px; height: 7px; border-radius: 50%;
@@ -879,6 +943,13 @@ function detectIntent(text) {
   if (/favou?rite/.test(t)) return { kind: 'fav' };
   if (/what\s+(year|date|day|time)\s+is\s+it|what('|’)?s\s+the\s+(year|date|time|day)|today('|’)?s\s+date|current\s+(year|date|time)|which\s+year\s+(is\s+it|are\s+we)|what\s+day\s+is\s+(it|today)/.test(t)) return { kind: 'date' };
   if (looksLikeGibberish(text)) return { kind: 'gibberish' };
+  /* photo + video generation */
+  const mediaVerb = /\b(make|draw|paint|sketch|generate|create|render|design|imagine|produce|show me|give me)\b/;
+  const videoWord = /\b(video|vid|clip|animation|animate|gif|movie|film)\b/;
+  const imageWord = /\b(photo|photos|picture|pictures|pic|pics|image|images|drawing|painting|wallpaper|logo|artwork|selfie|portrait)\b/;
+  if ((mediaVerb.test(t) && videoWord.test(t)) || (videoWord.test(t) && /\b(of|about|showing)\b/.test(t))) return { kind: 'video' };
+  if ((mediaVerb.test(t) && imageWord.test(t)) || (imageWord.test(t) && /\b(of|about|showing)\b/.test(t))) return { kind: 'image' };
+  if (/^(draw|paint|sketch)\b/.test(t)) return { kind: 'image' };
   if (/^(why|how|what|where|when|who|which|can|do|does|is|are|should)\b|\?$/.test(t)) return { kind: 'question' };
   return { kind: 'chat' };
 }
@@ -928,7 +999,7 @@ const NOVA = {
   ]),
   thanks: () => `You're welcome${nm()}. Glad to help. What's next?`,
   bye: () => `Goodbye${nm()}. Come back any time — I'll be here under the canopy.`,
-  help: () => `Happy to help${nm()}. I can:\n• **Answer questions** — why, how, what\n• **Do math** — try "what is 12 × 8?"\n• **Tell jokes, stories, and riddles**\n• **Chat** about whatever's on your mind\nEvery mode on Dapple is free. Where would you like to start?`,
+  help: () => `Happy to help${nm()}. I can:\n• **Answer anything** — football, cooking, homework, you name it\n• **Make pictures** — say "draw a red dragon"\n• **Make little clips** — say "make a video of a waterfall"\n• **Do math**, and tell **jokes, stories, and riddles**\nEvery mode on Dapple is free. Where would you like to start?`,
   models: () => `Of course. Dapple has three modes, all free and all fine to use:\n• **Nova** — the best. Considered, warm answers.\n• **Micro** — the second best. Quick and concise.\n• **Years** — the third best. Calm, with a little perspective.\nThere's no wrong choice — just three kinds of good.`,
   fav: () => pick([
     `Good question. I think mine is the moment an orange leaf lets go of its branch. What's yours${nm()}?`,
@@ -1089,6 +1160,119 @@ async function askAI(text, modelKey) {
     } catch (e) { lastErr = e; }
   }
   throw lastErr || new Error('AI unavailable');
+}
+
+/* ================= IMAGE + VIDEO (free, keyless) ================= */
+const IMG_BASE = 'https://image.pollinations.ai/prompt/';
+function cleanMediaPrompt(text) {
+  let p = text
+    .replace(/\b(make|draw|paint|sketch|generate|create|render|design|imagine|produce|show me|give me)\b/ig, ' ')
+    .replace(/\b(a|an|the|some|me)\b\s*(photo|photos|picture|pictures|pic|pics|image|images|drawing|painting|artwork|art|wallpaper|logo|selfie|portrait|video|vid|clip|animation|gif|movie|film)s?\b/ig, ' ')
+    .replace(/\b(photo|photos|picture|pictures|pic|pics|image|images|drawing|painting|artwork|wallpaper|logo|selfie|portrait|video|vid|clip|animation|gif|movie|film)s?\b/ig, ' ')
+    .replace(/\b(of|about|showing|with|for me|please|pls|can you|could you|for)\b/ig, ' ')
+    .replace(/\s{2,}/g, ' ')
+    .replace(/^[\s,.:;–—-]+|[\s,.:;–—-]+$/g, '')
+    .trim();
+  return p || text.trim();
+}
+function imgUrl(prompt, seed, w, h) {
+  return IMG_BASE + encodeURIComponent(prompt) + '?width=' + (w || 768) + '&height=' + (h || 768) + '&nologo=true&seed=' + seed;
+}
+function slug(s) { return s.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 40) || 'dapple'; }
+function loadImage(src, timeoutMs) {
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+    const timer = setTimeout(() => { img.src = ''; reject(new Error('timeout')); }, timeoutMs || 55000);
+    img.onload = () => { clearTimeout(timer); resolve(img); };
+    img.onerror = () => { clearTimeout(timer); reject(new Error('load failed')); };
+    img.src = src;
+  });
+}
+function mediaCaption(modelKey, kind, prompt) {
+  const noun = kind === 'video' ? 'clip' : 'picture';
+  return {
+    nova: `Here you go — a ${noun} of **${prompt}**. Want me to change anything?`,
+    micro: `Done. A ${noun} of **${prompt}**.`,
+    years: `There now — a ${noun} of **${prompt}**, made just for you, dear friend.`,
+  }[modelKey];
+}
+function makeImageReply(text, modelKey) {
+  const prompt = cleanMediaPrompt(text);
+  const seed = Math.floor(Math.random() * 1e6);
+  return { type: 'image', prompt, url: imgUrl(prompt, seed, 768, 768),
+    caption: mediaCaption(modelKey, 'image', prompt), speak: 'Here is your picture of ' + prompt + '.' };
+}
+function makeVideoReply(text, modelKey) {
+  const prompt = cleanMediaPrompt(text);
+  const base = Math.floor(Math.random() * 1e6);
+  const frames = [0, 1, 2].map(i => imgUrl(prompt, base + i, 640, 640));
+  return { type: 'video', prompt, frames,
+    caption: mediaCaption(modelKey, 'video', prompt), speak: 'Here is your clip of ' + prompt + '.' };
+}
+async function renderMedia(body, reply) {
+  const leafSvg = '<svg class="media-leaf" viewBox="0 0 40 50"><path d="M20 1 C33 9 39 24 20 46 C1 24 7 9 20 1 Z" fill="#e8940f"/></svg>';
+  body.innerHTML = format(reply.caption) +
+    '<div class="media-wrap loading">' + leafSvg + '<span>' +
+    (reply.type === 'video' ? 'painting your clip…' : 'painting your picture…') + '</span></div>';
+  const wrap = body.querySelector('.media-wrap');
+  scrollDown();
+  try {
+    if (reply.type === 'image') {
+      const img = await loadImage(reply.url);
+      img.className = 'gen-img';
+      img.alt = reply.prompt;
+      wrap.classList.remove('loading');
+      wrap.style.width = ''; wrap.style.height = '';
+      wrap.innerHTML = '';
+      wrap.appendChild(img);
+      const acts = document.createElement('div');
+      acts.className = 'media-actions';
+      acts.innerHTML = '<a href="' + reply.url + '" target="_blank" rel="noopener" download="dapple-' + slug(reply.prompt) + '.jpg">Open / Save</a>' +
+        '<a class="media-redo">Make another</a>';
+      wrap.appendChild(acts);
+      acts.querySelector('.media-redo').addEventListener('click', () => regenMedia(body, reply));
+    } else {
+      /* first frame required (reliable); extra frames best-effort, one at a time */
+      const first = await loadImage(reply.frames[0]);
+      const ok = [first];
+      for (const u of reply.frames.slice(1)) {
+        try { ok.push(await loadImage(u, 35000)); } catch (e) { /* skip missing frame */ }
+      }
+      wrap.classList.remove('loading');
+      wrap.style.width = ''; wrap.style.height = '';
+      wrap.innerHTML = '<div class="clip-player"><span class="clip-badge">AI CLIP</span></div>';
+      const player = wrap.querySelector('.clip-player');
+      if (ok.length === 1) {
+        first.className = 'clip-frame kb';
+        player.appendChild(first);
+      } else {
+        const dur = (ok.length * 2.8).toFixed(1) + 's';
+        ok.forEach((im, i) => {
+          im.className = 'clip-frame';
+          im.style.animationDuration = dur;
+          im.style.animationDelay = (i * 2.8) + 's';
+          player.appendChild(im);
+        });
+      }
+      const acts = document.createElement('div');
+      acts.className = 'media-actions';
+      acts.innerHTML = '<a href="' + reply.frames[0] + '" target="_blank" rel="noopener">Open frame</a><a class="media-redo">Make another</a>';
+      wrap.appendChild(acts);
+      acts.querySelector('.media-redo').addEventListener('click', () => regenMedia(body, reply));
+    }
+  } catch (e) {
+    wrap.classList.remove('loading');
+    wrap.style.width = ''; wrap.style.height = '';
+    wrap.innerHTML = '<span style="font-size:.82rem;color:var(--ink-soft)">I couldn\'t finish that one — the art service may be busy. Try again?</span>';
+  }
+  scrollDown();
+}
+function regenMedia(body, reply) {
+  if (busy) return;
+  const fresh = reply.type === 'video'
+    ? makeVideoReply(reply.prompt, activeModel)
+    : makeImageReply(reply.prompt, activeModel);
+  renderMedia(body, fresh);
 }
 
 /* ================= TOPIC FILTERS ================= */
@@ -1276,6 +1460,8 @@ async function generateReply(modelKey, text) {
   }
   if (intent.kind === 'math') return engine.math(intent.math);
   if (intent.kind === 'date') return engine.date();   /* device clock — always right, any topic */
+  if (intent.kind === 'image') return makeImageReply(text, modelKey);   /* generate a photo */
+  if (intent.kind === 'video') return makeVideoReply(text, modelKey);   /* generate a clip */
 
   /* quick scripted intents — instant and in-character */
   const scriptedKinds = ['greet', 'howru', 'who', 'joke', 'riddle', 'thanks', 'bye', 'help', 'models'];
@@ -1564,11 +1750,17 @@ async function handleSend(e) {
     new Promise(r => setTimeout(r, wait)),
   ]);
 
-  history.push({ role: 'user', content: text }, { role: 'assistant', content: reply });
-  if (history.length > 16) history = history.slice(-16);
-
-  speak(reply);
-  await typeOut(body, reply, m.typeSpeed);
+  if (reply && typeof reply === 'object' && (reply.type === 'image' || reply.type === 'video')) {
+    history.push({ role: 'user', content: text }, { role: 'assistant', content: '[made a ' + reply.type + ' of ' + reply.prompt + ']' });
+    if (history.length > 16) history = history.slice(-16);
+    speak(reply.speak);
+    await renderMedia(body, reply);
+  } else {
+    history.push({ role: 'user', content: text }, { role: 'assistant', content: reply });
+    if (history.length > 16) history = history.slice(-16);
+    speak(reply);
+    await typeOut(body, reply, m.typeSpeed);
+  }
 
   busy = false;
   sendBtn.disabled = false;
@@ -1668,7 +1860,7 @@ if (fullscreenBtn) {
 function welcome() {
   addSystem('Welcome to Dapple AI — every mode is free');
   addAI(
-    'Welcome to **Dapple AI**. I\'m **Nova**, the main mode here, and free to use. Ask me anything — football, cooking, YouTube, trends, homework, whatever you like. Switch between **Nova**, **Micro**, and **Years** for the tone, and pick a **topic filter** to keep me on one subject. There\'s also a **Voice** option up top. Everything is free.',
+    'Welcome to **Dapple AI**. I\'m **Nova**, the main mode here, and free to use. Ask me anything — football, cooking, trends, homework — or say **"draw a dragon"** to make a picture, or **"make a video of a waterfall"** for a little clip. Switch between **Nova**, **Micro**, and **Years** for the tone, pick a **topic filter**, and try the **Voice** option up top. Everything is free.',
     'nova',
     true
   );
