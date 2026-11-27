@@ -4,6 +4,8 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Dapple AI</title>
+<link rel="icon" type="image/png" href="icon.png">
+<link rel="apple-touch-icon" href="icon.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400..900;1,9..144,400..600&display=swap" rel="stylesheet">
@@ -1578,14 +1580,16 @@ async function generateReply(modelKey, text) {
   try {
     return await askAI(text, modelKey);
   } catch (e) {
-    /* offline / AI down — fall back to the scripted replies */
-    if (activeTopic !== 'general') return topicReply(activeTopic, modelKey, intent, text);
-    switch (intent.kind) {
-      case 'story': return engine.story();
-      case 'fav': return engine.fav();
-      case 'question': return engine.question(text);
-      default: return engine.chat(text);
-    }
+    /* AI down / busy — keep offline fun (stories, favourites), but be HONEST for real questions
+       instead of pretending with a generic reply */
+    if (intent.kind === 'story') return engine.story();
+    if (intent.kind === 'fav') return engine.fav();
+    const busy = {
+      nova: `Sorry${nm()}, I couldn't reach my brain just then — the free AI service is busy right now. Give it a moment and ask me again.`,
+      micro: `Brain's busy right now. Try again in a few seconds?`,
+      years: `Forgive me${nm()} — my thoughts are slow to arrive just now, the service is busy. Ask me again in a moment.`,
+    };
+    return busy[modelKey] || busy.nova;
   }
 }
 
